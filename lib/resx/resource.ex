@@ -13,7 +13,7 @@ defmodule Resx.Resource do
 
       See `hash/2` for more information.
     """
-    @spec hash(t) :: Integrity.checksum
+    @spec hash(t | Resource.Content.t) :: Integrity.checksum
     def hash(resource) do
         hash(resource, Application.get_env(:resx, :hash, :sha))
     end
@@ -22,8 +22,26 @@ defmodule Resx.Resource do
       Compute a hash of the resource content.
 
       Meta information and resource references are not included in the hash.
+
+        iex> Resx.Resource.hash(%Resx.Resource.Content{ type: :string, data: "Hello" }, { :crc32, { :erlang, :crc32, 1 } })
+        { :crc32, 1916479825 }
+
+        iex> Resx.Resource.hash(%Resx.Resource.Content{ type: :string, data: "Hello" }, { :crc32, { :erlang, :crc32, [] } })
+        { :crc32, 1916479825 }
+
+        iex> Resx.Resource.hash(%Resx.Resource.Content{ type: :string, data: "Hello" }, { :md5, { :crypto, :hash, [:md5] } })
+        { :md5, <<182, 117, 169, 117, 204, 18, 203, 145, 170, 93, 254, 5, 255, 81, 147, 6>> }
+
+        iex> Resx.Resource.hash(%Resx.Resource.Content{ type: :string, data: "Hello" }, { :hmac_md5_5, { :crypto, :hmac, [:md5, "secret", 5], 2 } })
+        { :hmac_md5_5, <<191, 168, 210, 216, 244>> }
+
+        iex> Resx.Resource.hash(%Resx.Resource.Content{ type: :string, data: "Hello" }, :md5)
+        { :md5, <<182, 117, 169, 117, 204, 18, 203, 145, 170, 93, 254, 5, 255, 81, 147, 6>> }
+
+        iex> Resx.Resource.hash(%Resx.Resource.Content{ type: :string, data: "Hello" }, { :base64, &Base.encode64/1 })
+        { :base64, "g2gCZAAGc3RyaW5nbQAAAAVIZWxsbw==" }
     """
-    @spec hash(t, Integrity.algo | { Integrity.algo, fun | mfa | { module, atom, list } | { module, atom, list, non_neg_integer } }) :: Integrity.checksum
+    @spec hash(t | Resource.Content.t, Integrity.algo | { Integrity.algo, fun | mfa | { module, atom, list } | { module, atom, list, non_neg_integer } }) :: Integrity.checksum
     def hash(resource, { algo, { module, fun, args, index } }) do
         { algo, apply(module, fun, List.insert_at(args, index, to_binary(resource))) }
     end
@@ -33,7 +51,7 @@ defmodule Resx.Resource do
     def hash(resource, { algo, { module, fun, args } }) do
         { algo, apply(module, fun, args ++ [to_binary(resource)]) }
     end
-    def hash(resource, { algo, fun }) when is_function(algo) do
+    def hash(resource, { algo, fun }) do
         { algo, fun.(to_binary(resource)) }
     end
     def hash(resource, algo) do
