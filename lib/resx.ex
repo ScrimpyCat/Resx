@@ -1,0 +1,2 @@
+defmodule Resx do
+end
