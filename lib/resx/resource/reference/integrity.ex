@@ -8,6 +8,8 @@ defmodule Resx.Resource.Reference.Integrity do
         }
     """
 
+    @enforce_keys [:checksum, :timestamp]
+
     defstruct [:checksum, :timestamp]
 
     alias Resx.Resource.Reference.Integrity

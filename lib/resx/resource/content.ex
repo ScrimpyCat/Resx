@@ -8,6 +8,8 @@ defmodule Resx.Resource.Content do
         }
     """
 
+    @enforce_keys [:type, :data]
+
     defstruct [:type, :data]
 
     alias Resx.Resource.Content

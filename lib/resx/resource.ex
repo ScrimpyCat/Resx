@@ -3,7 +3,7 @@ defmodule Resx.Resource do
     alias Resx.Resource.Content
     alias Resx.Resource.Reference.Integrity
 
-    defstruct [content: %Content{}, meta: []]
+    defstruct [:content, meta: []]
 
     @type t :: %Resource{
         content: Content.t,
