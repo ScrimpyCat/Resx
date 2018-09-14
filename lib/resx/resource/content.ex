@@ -8,11 +8,11 @@ defmodule Resx.Resource.Content do
         }
     """
 
+    alias Resx.Resource.Content
+
     @enforce_keys [:type, :data]
 
     defstruct [:type, :data]
-
-    alias Resx.Resource.Content
 
     @type type :: atom | [atom]
     @type t :: %Content{

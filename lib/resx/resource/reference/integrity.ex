@@ -8,11 +8,11 @@ defmodule Resx.Resource.Reference.Integrity do
         }
     """
 
+    alias Resx.Resource.Reference.Integrity
+
     @enforce_keys [:checksum, :timestamp]
 
     defstruct [:checksum, :timestamp]
-
-    alias Resx.Resource.Reference.Integrity
 
     @type algo :: atom
     @type checksum :: { algo, any }
