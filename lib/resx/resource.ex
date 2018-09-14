@@ -1,11 +1,15 @@
 defmodule Resx.Resource do
     alias Resx.Resource
     alias Resx.Resource.Content
+    alias Resx.Resource.Reference
     alias Resx.Resource.Reference.Integrity
 
-    defstruct [:content, meta: []]
+    @enforce_keys [:reference, :content]
+
+    defstruct [:reference, :content, meta: []]
 
     @type t :: %Resource{
+        reference: Reference.t,
         content: Content.t,
         meta: keyword
     }
