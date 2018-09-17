@@ -13,6 +13,8 @@ defmodule Resx.Producer do
 
     @callback exists?(ref) :: { :ok, exists :: boolean } | error(reference_error)
 
+    @callback alike?(ref, ref) :: boolean
+
     @callback resource_uri(Reference.t) :: { :ok, uri } | error(resource_error | reference_error)
 
     @callback get_resource_attribute(ref, field :: resource_attribute_key) :: { :ok, attribute_value :: any } | error(resource_error | reference_error | :unknown_key)
