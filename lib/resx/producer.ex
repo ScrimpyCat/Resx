@@ -45,6 +45,16 @@ defmodule Resx.Producer do
     """
     @callback open(ref) :: { :ok, resource :: Resource.t } | error(resource_error | reference_error)
 
+    @doc """
+      Implement the behaviour for checking whether a resource exists for the given
+      reference.
+
+      The reference to the resource can either be an existing `Resx.Resource.Reference`
+      struct, or a URI.
+
+      If the resource exists return `{ :ok, true }`, if it does not exist return
+      `{ :ok, false }`. Otherwise return an appropriate error.
+    """
     @callback exists?(ref) :: { :ok, exists :: boolean } | error(reference_error)
 
     @callback alike?(ref, ref) :: boolean
