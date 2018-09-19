@@ -57,6 +57,15 @@ defmodule Resx.Producer do
     """
     @callback exists?(ref) :: { :ok, exists :: boolean } | error(reference_error)
 
+    @doc """
+      Implement the behaviour for checking if two references point to the same
+      resource.
+
+      The reference to the resource can either be an existing `Resx.Resource.Reference`
+      struct, or a URI.
+
+      If the references are alike return `true`, otherwise return `false`.
+    """
     @callback alike?(ref, ref) :: boolean
 
     @callback resource_uri(Reference.t) :: { :ok, uri } | error(resource_error | reference_error)
