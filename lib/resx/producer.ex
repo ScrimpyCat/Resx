@@ -68,6 +68,15 @@ defmodule Resx.Producer do
     """
     @callback alike?(ref, ref) :: boolean
 
+    @doc """
+      Implement the behaviour to retrieve the URI for a resource reference.
+
+      The reference to the resource is an existing `Resx.Resource.Reference`
+      struct.
+
+      If the URI can be created return `{ :ok, uri }`. Otherwise return an
+      appropriate error.
+    """
     @callback resource_uri(Reference.t) :: { :ok, uri } | error(resource_error | reference_error)
 
     @callback get_resource_attribute(ref, field :: resource_attribute_key) :: { :ok, attribute_value :: any } | error(resource_error | reference_error | :unknown_key)
