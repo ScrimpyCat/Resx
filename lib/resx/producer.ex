@@ -94,4 +94,34 @@ defmodule Resx.Producer do
     @callback resource_attributes(ref) :: { :ok, attribute_values :: %{ optional(resource_attribute_key) => any } } | error(resource_error | reference_error)
 
     @callback resource_attribute_keys(ref) :: { :ok, [field :: resource_attribute_key] } | error(resource_error | reference_error)
+
+    @doc false
+    defmacro __using__(_opts) do
+        quote do
+            @behaviour Resx.Producer
+
+            @impl Resx.Producer
+            def resource_attribute(reference, field) do
+                case __MODULE__.resource_attributes(reference) do
+                    { :ok, attributes } ->
+                        if Map.has_key?(attributes, field) do
+                            { :ok, attributes[field] }
+                        else
+                            { :error, { :unknown_key, field } }
+                        end
+                    error -> error
+                end
+            end
+
+            @impl Resx.Producer
+            def resource_attribute_keys(reference) do
+                case __MODULE__.resource_attributes(reference) do
+                    { :ok, attributes } -> Map.keys(attributes)
+                    error -> error
+                end
+            end
+
+            defoverridable [resource_attribute: 2, resource_attribute_keys: 1]
+        end
+    end
 end
