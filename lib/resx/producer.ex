@@ -89,9 +89,9 @@ defmodule Resx.Producer do
       `{ :ok, value }`, where `value` is the value of the attribute. Otherwise
       return an appropriate error.
     """
-    @callback get_resource_attribute(ref, field :: resource_attribute_key) :: { :ok, attribute_value :: any } | error(resource_error | reference_error | :unknown_key)
+    @callback resource_attribute(ref, field :: resource_attribute_key) :: { :ok, attribute_value :: any } | error(resource_error | reference_error | :unknown_key)
 
-    @callback get_resource_attributes(ref) :: { :ok, attribute_values :: %{ optional(resource_attribute_key) => any } } | error(resource_error | reference_error)
+    @callback resource_attributes(ref) :: { :ok, attribute_values :: %{ optional(resource_attribute_key) => any } } | error(resource_error | reference_error)
 
-    @callback resource_attributes(ref) :: { :ok, [field :: resource_attribute_key] } | error(resource_error | reference_error)
+    @callback resource_attribute_keys(ref) :: { :ok, [field :: resource_attribute_key] } | error(resource_error | reference_error)
 end
