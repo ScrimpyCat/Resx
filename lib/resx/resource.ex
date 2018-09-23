@@ -14,6 +14,14 @@ defmodule Resx.Resource do
         meta: keyword
     }
 
+    def open(%Resource{ reference: reference }), do: reference
+    def open(reference) do
+        case Resx.producer(reference) do
+            nil -> { :error, { :invalid_reference, "no producer for URI (#{reference})" } }
+            adapter -> adapter.open(reference)
+        end
+    end
+
     @doc """
       Compute a hash of the resource content using the default hashing function.
 
