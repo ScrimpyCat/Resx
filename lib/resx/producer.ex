@@ -91,6 +91,16 @@ defmodule Resx.Producer do
     """
     @callback resource_attribute(ref, field :: resource_attribute_key) :: { :ok, attribute_value :: any } | error(resource_error | reference_error | :unknown_key)
 
+    @doc """
+      Implement the behaviour to retrieve the attributes for a resource.
+
+      The reference to the resource can either be an existing `Resx.Resource.Reference`
+      struct, or a URI.
+
+      If the attributes were successfully retrieved for the resource return
+      `{ :ok, %{ key => value } }`, where `key` is the field names of the attribute,
+      and `value` is the value of the attribute. Otherwise return an appropriate error.
+    """
     @callback resource_attributes(ref) :: { :ok, attribute_values :: %{ optional(resource_attribute_key) => any } } | error(resource_error | reference_error)
 
     @doc """
