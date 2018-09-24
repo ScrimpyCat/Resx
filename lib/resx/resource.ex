@@ -14,11 +14,18 @@ defmodule Resx.Resource do
         meta: keyword
     }
 
-    def open(%Resource{ reference: reference }), do: open(reference)
-    def open(reference) do
+    defp adapter(%Resource{ reference: reference }), adapter(reference)
+    defp adapter(reference) do
         case Resx.producer(reference) do
             nil -> { :error, { :invalid_reference, "no producer for URI (#{reference})" } }
-            adapter -> adapter.open(reference)
+            adapter -> { :ok, adapter }
+        end
+    end
+
+    def open(reference) do
+        case adapter(reference) do
+            { :ok, adapter } -> adapter.open(reference)
+            error -> error
         end
     end
 
