@@ -24,13 +24,17 @@ defmodule Resx.Resource do
         end
     end
 
-    def open(resource) do
-        reference = ref(resource)
+    defp adapter_call(resources, op, arg \\ [])
+    defp adapter_call([input|inputs], op, args), do: adapter_call(inputs, op, [ref(input)|args])
+    defp adapter_call([], op, args) do
+        args = [reference|_] = Enum.reverse(args)
         case adapter(reference) do
-            { :ok, adapter } -> adapter.open(reference)
+            { :ok, adapter } -> apply(adapter, op, args)
             error -> error
         end
     end
+
+    def open(resource), do: adapter_call([resource], :open)
 
     @doc """
       Compute a hash of the resource content using the default hashing function.
