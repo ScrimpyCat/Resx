@@ -36,6 +36,18 @@ defmodule Resx.Resource do
 
     def open(resource), do: adapter_call([resource], :open)
 
+    def exists?(resource), do: adapter_call([resource], :exists?)
+
+    def alike?(resource_a, resource_b), do: adapter_call([resource_a, resource_b], :alike?)
+
+    def uri(resource), do: adapter_call([resource], :resource_uri)
+
+    def attribute(resource, field), do: adapter_call([resource, field], :resource_attribute)
+
+    def attributes(resource), do: adapter_call([resource], :resource_attributes)
+
+    def attribute_keys(resource), do: adapter_call([resource], :resource_attribute_keys)
+
     @doc """
       Compute a hash of the resource content using the default hashing function.
 
