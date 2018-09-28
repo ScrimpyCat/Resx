@@ -34,18 +34,25 @@ defmodule Resx.Resource do
         end
     end
 
+    @spec open(t | Resx.Producer.ref) :: { :ok, Resource.t } | Resx.Producer.error(Resx.Producer.resource_error | Resx.Producer.reference_error)
     def open(resource), do: adapter_call([resource], :open)
 
+    @spec exists?(t | Resx.Producer.ref) :: { :ok, boolean } | Resx.Producer.error(Resx.Producer.reference_error)
     def exists?(resource), do: adapter_call([resource], :exists?)
 
+    @spec alike?(t | Resx.Producer.ref, t | Resx.Producer.ref) :: boolean
     def alike?(resource_a, resource_b), do: adapter_call([resource_a, resource_b], :alike?)
 
+    @spec uri(t | Reference.t) :: { :ok, Resx.Producer.uri } | Resx.Producer.error(Resx.Producer.resource_error | Resx.Producer.reference_error)
     def uri(resource), do: adapter_call([resource], :resource_uri)
 
+    @spec attribute(t | Resx.Producer.ref, Resx.Producer.resource_attribute_key) :: { :ok, any } | Resx.Producer.error(Resx.Producer.resource_error | Resx.Producer.reference_error | :unknown_key)
     def attribute(resource, field), do: adapter_call([resource, field], :resource_attribute)
 
+    @spec attributes(t | Resx.Producer.ref) :: { :ok, %{ optional(Resx.Producer.resource_attribute_key) => any } } | Resx.Producer.error(Resx.Producer.resource_error | Resx.Producer.reference_error)
     def attributes(resource), do: adapter_call([resource], :resource_attributes)
 
+    @spec attribute_keys(t | Resx.Producer.ref) :: { :ok, [Resx.Producer.resource_attribute_key] } | Resx.Producer.error(Resx.Producer.resource_error | Resx.Producer.reference_error)
     def attribute_keys(resource), do: adapter_call([resource], :resource_attribute_keys)
 
     @doc """
