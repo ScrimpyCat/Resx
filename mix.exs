@@ -16,6 +16,6 @@ defmodule Resx.MixProject do
     end
 
     defp deps do
-        []
+        [{ :ex_doc, "~> 0.18", only: :dev, runtime: false }]
     end
 end
