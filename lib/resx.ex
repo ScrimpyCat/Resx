@@ -3,7 +3,8 @@ defmodule Resx do
     alias Resx.Resource.Reference
 
     @default_producers %{
-        "file" => Resx.Producers.File
+        "file" => Resx.Producers.File,
+        "resx-transform" => Resx.Producers.Transform
     }
 
     def producer(%Resource{ reference: reference }), do: producer(reference)
