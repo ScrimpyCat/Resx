@@ -1,4 +1,8 @@
 defmodule Resx.Resource do
+    @moduledoc """
+      The resource representation.
+    """
+
     alias Resx.Resource
     alias Resx.Resource.Content
     alias Resx.Resource.Reference
