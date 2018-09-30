@@ -23,7 +23,7 @@ defmodule Resx.Producers.Transform do
     defp build_ref([module|modules], base) do
         build_ref(modules, %Reference{
             adapter: __MODULE__,
-            repository: base,
+            repository: { module, base },
             integrity: nil
         })
     end
