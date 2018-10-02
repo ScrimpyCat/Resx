@@ -8,6 +8,8 @@ defmodule Resx.Resource do
     alias Resx.Resource.Reference
     alias Resx.Resource.Reference.Integrity
 
+    @type attribute_key :: atom
+
     @enforce_keys [:reference, :content]
 
     defstruct [:reference, :content, meta: []]
@@ -38,25 +40,25 @@ defmodule Resx.Resource do
         end
     end
 
-    @spec open(t | Resx.Producer.ref) :: { :ok, Resource.t } | Resx.Producer.error(Resx.Producer.resource_error | Resx.Producer.reference_error)
+    @spec open(t | Resx.ref) :: { :ok, Resource.t } | Resx.error(Resx.resource_error | Resx.reference_error)
     def open(resource), do: adapter_call([resource], :open)
 
-    @spec exists?(t | Resx.Producer.ref) :: { :ok, boolean } | Resx.Producer.error(Resx.Producer.reference_error)
+    @spec exists?(t | Resx.ref) :: { :ok, boolean } | Resx.error(Resx.reference_error)
     def exists?(resource), do: adapter_call([resource], :exists?)
 
-    @spec alike?(t | Resx.Producer.ref, t | Resx.Producer.ref) :: boolean
+    @spec alike?(t | Resx.ref, t | Resx.ref) :: boolean
     def alike?(resource_a, resource_b), do: adapter_call([resource_a, resource_b], :alike?)
 
-    @spec uri(t | Reference.t) :: { :ok, Resx.Producer.uri } | Resx.Producer.error(Resx.Producer.resource_error | Resx.Producer.reference_error)
+    @spec uri(t | Reference.t) :: { :ok, Resx.Producer.uri } | Resx.error(Resx.resource_error | Resx.reference_error)
     def uri(resource), do: adapter_call([resource], :resource_uri)
 
-    @spec attribute(t | Resx.Producer.ref, Resx.Producer.resource_attribute_key) :: { :ok, any } | Resx.Producer.error(Resx.Producer.resource_error | Resx.Producer.reference_error | :unknown_key)
+    @spec attribute(t | Resx.ref, attribute_key) :: { :ok, any } | Resx.error(Resx.resource_error | Resx.reference_error | :unknown_key)
     def attribute(resource, field), do: adapter_call([resource, field], :resource_attribute)
 
-    @spec attributes(t | Resx.Producer.ref) :: { :ok, %{ optional(Resx.Producer.resource_attribute_key) => any } } | Resx.Producer.error(Resx.Producer.resource_error | Resx.Producer.reference_error)
+    @spec attributes(t | Resx.ref) :: { :ok, %{ optional(attribute_key) => any } } | Resx.error(Resx.resource_error | Resx.reference_error)
     def attributes(resource), do: adapter_call([resource], :resource_attributes)
 
-    @spec attribute_keys(t | Resx.Producer.ref) :: { :ok, [Resx.Producer.resource_attribute_key] } | Resx.Producer.error(Resx.Producer.resource_error | Resx.Producer.reference_error)
+    @spec attribute_keys(t | Resx.ref) :: { :ok, [attribute_key] } | Resx.error(Resx.resource_error | Resx.reference_error)
     def attribute_keys(resource), do: adapter_call([resource], :resource_attribute_keys)
 
     @doc """
