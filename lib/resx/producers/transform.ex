@@ -1,6 +1,7 @@
 defmodule Resx.Producers.Transform do
     use Resx.Producer
 
+    alias Resx.Resource
     alias Resx.Resource.Reference
     alias Resx.Resource.Reference.Integrity
 
@@ -39,6 +40,77 @@ defmodule Resx.Producers.Transform do
             _ -> "transformation (#{module}) does not exist"
         else
             module -> get_stages(path, [module|modules])
+        end
+    end
+
+    @impl Resx.Producer
+    def open(reference) do
+        case to_ref(reference) do
+            { :ok, ref = %Reference{ repository: { transformer, reference } } } ->
+                case Resource.open(reference) do
+                    { :ok, resource } ->
+                        case transformer.transform(%{ resource | reference: %{ ref | repository: { transformer, resource.reference } } }) do
+                            { :ok, resource = %{ reference: reference } } -> { :ok, %{ resource | reference: %{ reference | integrity: %Integrity{ checksum: Resource.hash(resource), timestamp: DateTime.to_unix(DateTime.utc_now) } } } }
+                            error -> error
+                        end
+                    error -> error
+                end
+            error -> error
+        end
+    end
+
+    @impl Resx.Producer
+    def exists?(reference) do
+        case to_ref(reference) do
+            { :ok, %Reference{ repository: { _, reference } } } -> Resource.exists?(reference)
+            error -> error
+        end
+    end
+
+    @impl Resx.Producer
+    def alike?(a, b) do
+        with { :a, { :ok, %Reference{ repository: { transformer, reference_a } } } } <- { :a, to_ref(a) },
+             { :b, { :ok, %Reference{ repository: { ^transformer, reference_b } } } } <- { :b, to_ref(b) } do
+                Resource.alike?(reference_a, reference_b)
+        else
+            _ -> false
+        end
+    end
+
+    @impl Resx.Producer
+    def resource_uri(reference) do
+        case to_ref(reference) do
+            { :ok, %Reference{ repository: { transformer, reference } } } ->
+                case Resource.uri(reference) do
+                    { :ok, "resx-transform:" <> uri } -> { :ok, "resx-transform:#{inspect transformer},#{uri}" }
+                    { :ok, uri } -> { :ok, "resx-transform:#{inspect transformer},#{Base.encode64(uri)}" }
+                    error -> error
+                end
+            error -> error
+        end
+    end
+
+    @impl Resx.Producer
+    def resource_attribute(reference, field) do
+        case to_ref(reference) do
+            { :ok, %Reference{ repository: { _, reference } } } -> Resource.attribute(reference, field)
+            error -> error
+        end
+    end
+
+    @impl Resx.Producer
+    def resource_attributes(reference) do
+        case to_ref(reference) do
+            { :ok, %Reference{ repository: { _, reference } } } -> Resource.attributes(reference)
+            error -> error
+        end
+    end
+
+    @impl Resx.Producer
+    def resource_attribute_keys(reference) do
+        case to_ref(reference) do
+            { :ok, %Reference{ repository: { _, reference } } } -> Resource.attribute_keys(reference)
+            error -> error
         end
     end
 end
