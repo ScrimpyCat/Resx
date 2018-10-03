@@ -40,6 +40,7 @@ defmodule Resx do
     @type ref :: uri | Reference.t
 
     @default_producers %{
+        "data" => Resx.Producers.Data,
         "file" => Resx.Producers.File,
         "resx-transform" => Resx.Producers.Transform
     }
