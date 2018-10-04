@@ -92,14 +92,19 @@ defmodule Resx.Producers.Data do
     def resource_uri(reference) do
         case to_data(reference) do
             { :ok, { type, attributes, data } } ->
-                data = Base.encode64(data)
+                uri =
+                    [
+                        "data:",
+                        type,
+                        ";",
+                        Enum.reduce(attributes, [], fn { k, v }, acc -> [[k, "=", v, ";"]|acc] end),
+                        "base64,",
+                        Base.encode64(data)
+                    ]
+                    |> IO.iodata_to_binary
+                    |> URI.encode
 
-                Enum.map(attributes, fn { k, v } -> "#{k}=#{v}" end)
-                |> Enum.join(";")
-                |> case do
-                    "" -> { :ok, URI.encode("data:#{type};base64,#{data}") }
-                    params -> { :ok, URI.encode("data:#{type};#{params};base64,#{data}") }
-                end
+                { :ok, uri }
             error -> error
         end
     end
