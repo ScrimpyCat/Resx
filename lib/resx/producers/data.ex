@@ -92,7 +92,7 @@ defmodule Resx.Producers.Data do
     def resource_uri(reference) do
         case to_data(reference) do
             { :ok, { type, attributes, data } } ->
-                { :ok, data } = Base.encode64(data)
+                data = Base.encode64(data)
 
                 Enum.map(attributes, fn { k, v } -> "#{k}=#{v}" end)
                 |> Enum.join(";")
