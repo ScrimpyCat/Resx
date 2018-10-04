@@ -6,6 +6,7 @@ defmodule Resx.Producers.Data do
     alias Resx.Resource.Reference
     alias Resx.Resource.Reference.Integrity
 
+    defp to_data(%Reference{ repository: repo }), do: { :ok, repo }
     defp to_data(%URI{ scheme: "data", path: path }) do
         with [tokens, data] <- String.split(path, ",", parts: 2),
              [type|tokens] <- String.split(tokens, ";") do
