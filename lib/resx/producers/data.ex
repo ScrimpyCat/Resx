@@ -48,7 +48,7 @@ defmodule Resx.Producers.Data do
     @impl Resx.Producer
     def open(reference) do
         case to_data(reference) do
-            { :ok, repo = { type, meta, data } } ->
+            { :ok, repo = { type, _, data } } ->
                 content = %Content{
                     type: type,
                     data: data
