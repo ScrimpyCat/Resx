@@ -1,4 +1,20 @@
 defmodule Resx.Producers.Data do
+    @moduledoc """
+      A producer to handle data URIs.
+
+        Resx.Producers.Data.open("data:text/plain;base64,SGVsbG8sIFdvcmxkIQ%3D%3D")
+
+      ### Media Types
+
+      If an error is being returned when attempting to open a data URI due to
+      `{ :invalid_reference, "invalid media type: \#{type}" }`, the MIME type
+      will need to be added to the config.
+
+      ### Attributes
+
+      Data URI attributes will be able to be accessed as resource attributes
+      `Resx.Resource.attributes/1`
+    """
     use Resx.Producer
 
     alias Resx.Resource
