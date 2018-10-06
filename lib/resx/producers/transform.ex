@@ -77,15 +77,30 @@ defmodule Resx.Producers.Transform do
         end
     end
 
+    defp to_uri(reference, transformations \\ [])
+    defp to_uri(%Reference{ repository: { transformer, reference = %Reference{ adapter: __MODULE__ } } }, transformations), do: to_uri(reference, [transformations, [inspect(transformer), ","]])
+    defp to_uri(%Reference{ repository: { transformer, reference } }, transformations) do
+        case Resource.uri(reference) do
+            { :ok, uri } ->
+                uri =
+                    [
+                        "resx-transform:",
+                        transformations,
+                        inspect(transformer),
+                        ",",
+                        Base.encode64(uri)
+                    ]
+                    |> IO.iodata_to_binary
+
+                { :ok, uri }
+            error -> error
+        end
+    end
+
     @impl Resx.Producer
     def resource_uri(reference) do
         case to_ref(reference) do
-            { :ok, %Reference{ repository: { transformer, reference } } } ->
-                case Resource.uri(reference) do
-                    { :ok, "resx-transform:" <> uri } -> { :ok, "resx-transform:#{inspect transformer},#{uri}" }
-                    { :ok, uri } -> { :ok, "resx-transform:#{inspect transformer},#{Base.encode64(uri)}" }
-                    error -> error
-                end
+            { :ok, reference } -> to_uri(reference)
             error -> error
         end
     end
