@@ -86,6 +86,7 @@ defmodule Resx.Producers.Transform do
                         Base.encode64(uri)
                     ]
                     |> IO.iodata_to_binary
+                    |> URI.encode
 
                 { :ok, uri }
             error -> error
