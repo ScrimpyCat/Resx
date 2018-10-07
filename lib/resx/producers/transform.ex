@@ -3,7 +3,6 @@ defmodule Resx.Producers.Transform do
 
     alias Resx.Resource
     alias Resx.Resource.Reference
-    alias Resx.Resource.Reference.Integrity
 
     defp to_ref(reference = %Reference{}), do: { :ok, reference }
     defp to_ref(uri) when is_binary(uri), do: URI.decode(uri) |> URI.parse |> to_ref
@@ -46,13 +45,9 @@ defmodule Resx.Producers.Transform do
     @impl Resx.Producer
     def open(reference) do
         case to_ref(reference) do
-            { :ok, ref = %Reference{ repository: { transformer, reference } } } ->
+            { :ok, %Reference{ repository: { transformer, reference } } } ->
                 case Resource.open(reference) do
-                    { :ok, resource } ->
-                        case transformer.transform(%{ resource | reference: %{ ref | repository: { transformer, resource.reference } } }) do
-                            { :ok, resource = %{ reference: reference } } -> { :ok, %{ resource | reference: %{ reference | integrity: %Integrity{ checksum: Resource.hash(resource), timestamp: DateTime.to_unix(DateTime.utc_now) } } } }
-                            error -> error
-                        end
+                    { :ok, resource } -> Resx.Transformer.apply(resource, transformer)
                     error -> error
                 end
             error -> error
