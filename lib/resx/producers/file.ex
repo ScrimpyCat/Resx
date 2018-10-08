@@ -15,9 +15,9 @@ defmodule Resx.Producers.File do
         Path.basename(path)
         |> String.split(".", trim: true)
         |> case do
-            [_, extension] -> extension
+            [_, extension] -> MIME.type(extension)
             [_] -> nil
-            [_|extensions] -> extensions
+            [_|extensions] -> Enum.map(extensions, &MIME.type/1)
         end
     end
 
