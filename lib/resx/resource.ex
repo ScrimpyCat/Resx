@@ -8,7 +8,7 @@ defmodule Resx.Resource do
     alias Resx.Resource.Reference
     alias Resx.Resource.Reference.Integrity
 
-    @type attribute_key :: atom
+    @type attribute_key :: atom | String.t
 
     @enforce_keys [:reference, :content]
 
