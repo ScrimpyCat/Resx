@@ -105,7 +105,7 @@ defmodule Resx.Producer do
             @impl Resx.Producer
             def resource_attribute_keys(reference) do
                 case __MODULE__.resource_attributes(reference) do
-                    { :ok, attributes } -> Map.keys(attributes)
+                    { :ok, attributes } -> { :ok, Map.keys(attributes) }
                     error -> error
                 end
             end
