@@ -7,7 +7,8 @@ defmodule Resx.Producers.File do
     alias Resx.Resource.Reference.Integrity
 
     defp to_path(%Reference{ repository: path }), do: { :ok, path }
-    defp to_path(%URI{ scheme: "file", path: path }), do: { :ok, path }
+    defp to_path(%URI{ scheme: "file", host: host, path: path }) when host in [nil, "localhost"], do: { :ok, path }
+    defp to_path(%URI{ scheme: "file" }), do: { :error, "only supports local file references" }
     defp to_path(uri) when is_binary(uri), do: URI.decode(uri) |> URI.parse |> to_path
     defp to_path(_), do: { :error, { :invalid_reference, "not a file reference" } }
 
