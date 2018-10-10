@@ -40,6 +40,9 @@ defmodule Resx.Resource do
         end
     end
 
+    @doc """
+      Open a resource from a pre-existing resource or a resource reference.
+    """
     @spec open(t | Resx.ref) :: { :ok, Resource.t } | Resx.error(Resx.resource_error | Resx.reference_error)
     def open(resource), do: adapter_call([resource], :open)
 
