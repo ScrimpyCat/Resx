@@ -51,6 +51,8 @@ defmodule Resx.Producers.File do
         match_to_regex(match, { special, special }, false, nil)
     end
     defp match_to_regex("," <> match, { literal, special }, false, :alternation), do: match_to_regex(match, { [literal, ","], [special, "|"] }, false, :alternation)
+    defp match_to_regex("?" <> match, { literal, special }, false, nil), do: match_to_regex(match, { [literal, "."], [special, "."] }, false, nil)
+    defp match_to_regex("*" <> match, { literal, special }, false, nil), do: match_to_regex(match, { [literal, ".*"], [special, ".*"] }, false, nil)
     defp match_to_regex(<<c :: utf8, match :: binary>>, { literal, special }, _, wildcard) when c in '.^$*+-?()[]{}|\\' do
         c = <<"\\", c :: utf8>>
         match_to_regex(match, { [literal, c], [special, c] }, false, wildcard)
@@ -59,7 +61,6 @@ defmodule Resx.Producers.File do
         c = <<c :: utf8>>
         match_to_regex(match, { [literal, c], [special, c] }, false, wildcard)
     end
-    # TODO: handle * and ?
 
     defp path_match([], []), do: true
     defp path_match([], ["**"]), do: true
