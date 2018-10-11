@@ -62,29 +62,32 @@ defmodule Resx.Producers.File do
         match_to_regex(match, { [literal, c], [special, c] }, false, wildcard)
     end
 
-    defp path_match([], []), do: true
-    defp path_match([], ["**"]), do: true
-    defp path_match([], _), do: false
-    defp path_match([component|path], ["**", "*"|glob]), do: path_match(path, ["**"|glob])
-    defp path_match([component|path], ["**", component|glob]), do: path_match(path, glob)
-    defp path_match([component|path], ["**", match|glob]) do
-        if Regex.match?(match_to_regex(match), component) do
-            path_match(path, glob)
+    defp path_match(path, glob, processed \\ false)
+    defp path_match([], [], _), do: true
+    defp path_match([], ["**"], _), do: true
+    defp path_match([], _, _), do: false
+    defp path_match([component|path], ["**", "*"|glob], _), do: path_match(path, ["**"|glob], false)
+    defp path_match([component|path], ["**", component|glob], _), do: path_match(path, glob, false)
+    defp path_match([component|path], ["**", match = %Regex{}|glob], _) do
+        if Regex.match?(match, component) do
+            path_match(path, glob, false)
         else
-            path_match(path, ["**", match|glob])
+            path_match(path, ["**", match|glob], true)
         end
     end
-    defp path_match([component|path], glob = ["**"|_]), do: path_match(path, glob)
-    defp path_match([component|path], ["*"|glob]), do: path_match(path, glob)
-    defp path_match([component|path], [component|glob]), do: path_match(path, glob)
-    defp path_match([component|path], [match|glob]) do
-        if Regex.match?(match_to_regex(match), component) do
-            path_match(path, glob)
+    defp path_match(path, ["**", match|glob], false), do: path_match(path, ["**", match_to_regex(match)|glob], true)
+    defp path_match([component|path], glob = ["**"|_], processed), do: path_match(path, glob, processed)
+    defp path_match([component|path], ["*"|glob], _), do: path_match(path, glob, false)
+    defp path_match([component|path], [component|glob], _), do: path_match(path, glob, false)
+    defp path_match([component|path], [match = %Regex{}|glob], _) do
+        if Regex.match?(match, component) do
+            path_match(path, glob, false)
         else
-            path_match(path, [match|glob])
+            path_match(path, [match|glob], true)
         end
     end
-    defp path_match(_, _), do: false
+    defp path_match(path, [match|glob], false), do: path_match(path, [match_to_regex(match)|glob], true)
+    defp path_match(_, _, _), do: false
 
     defp include_path?(path, glob) do
         path_match(Path.split(path), Path.split(glob))
