@@ -26,7 +26,7 @@ defmodule Resx.Producers.File do
         |> case do
             [_, extension] -> MIME.type(extension)
             [_] -> nil
-            [_|extensions] -> Enum.map(extensions, &MIME.type/1)
+            [_|extensions] -> Enum.reduce(extensions, [], &([MIME.type(&1)|&2]))
         end
     end
 
