@@ -30,8 +30,15 @@ defmodule Resx.Producers.File do
             ]
 
       The `:access` field should contain either a list of strings, or regexes, or
-      a callback functions that expect a string and returns a boolean. Valid function
-      formats are any callback variant, see `Resx.Callback` for more information.
+      a callback functions that expect a string (glob pattern) and returns a boolean.
+      Valid function formats are any callback variant, see `Resx.Callback` for more
+      information.
+
+      #### Glob Pattern
+
+      Glob pattern rules follow the syntax of `Path.wildcard/2`, with the addition
+      of an negative character match `[!char1,char2,...]`. e.g. `[!abc]` or `[!a-c]`
+      (match any character other than `a`, `b`, or `c`).
     """
     use Resx.Producer
 
