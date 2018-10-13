@@ -53,7 +53,7 @@ defmodule Resx.Resource do
     @spec alike?(t | Resx.ref, t | Resx.ref) :: boolean
     def alike?(resource_a, resource_b), do: adapter_call([resource_a, resource_b], :alike?)
 
-    @spec uri(t | Reference.t) :: { :ok, Resx.Producer.uri } | Resx.error(Resx.resource_error | Resx.reference_error)
+    @spec uri(t | Reference.t) :: { :ok, Resx.uri } | Resx.error(Resx.resource_error | Resx.reference_error)
     def uri(resource), do: adapter_call([resource], :resource_uri)
 
     @spec attribute(t | Resx.ref, attribute_key) :: { :ok, any } | Resx.error(Resx.resource_error | Resx.reference_error | :unknown_key)
