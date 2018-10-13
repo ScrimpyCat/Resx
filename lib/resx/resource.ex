@@ -7,6 +7,7 @@ defmodule Resx.Resource do
     alias Resx.Resource.Content
     alias Resx.Resource.Reference
     alias Resx.Resource.Reference.Integrity
+    alias Resx.Callback
 
     @type attribute_key :: atom | String.t
 
@@ -67,6 +68,12 @@ defmodule Resx.Resource do
     @doc """
       Compute a hash of the resource content using the default hashing function.
 
+      The default hashing function can be configured by giving a `:hash` option in
+      your config.
+
+        config :resx,
+            hash: { :crc32, { :erlang, :crc32, 1 } }
+
       See `hash/2` for more information.
     """
     @spec hash(t | Content.t) :: Integrity.checksum
@@ -78,6 +85,11 @@ defmodule Resx.Resource do
       Compute a hash of the resource content.
 
       Meta information and resource references are not included in the hash.
+
+      Hashing algorithms can take the form of either an atom that is a valid option
+      to `:crypto.hash/2`, or a function that accepts a binary and returns any term.
+      Valid function formats are any callback variant, see `Resx.Callback` for more
+      information.
 
         iex> Resx.Resource.hash(%Resx.Resource.Content{ type: :string, data: "Hello" }, { :crc32, { :erlang, :crc32, 1 } })
         { :crc32, 1916479825 }
@@ -97,18 +109,9 @@ defmodule Resx.Resource do
         iex> Resx.Resource.hash(%Resx.Resource.Content{ type: :string, data: "Hello" }, { :base64, &Base.encode64/1 })
         { :base64, "g2gCZAAGc3RyaW5nbQAAAAVIZWxsbw==" }
     """
-    @spec hash(t | Content.t, Integrity.algo | { Integrity.algo, fun | mfa | { module, atom, list } | { module, atom, list, non_neg_integer } }) :: Integrity.checksum
-    def hash(resource, { algo, { module, fun, args, index } }) do
-        { algo, apply(module, fun, List.insert_at(args, index, to_binary(resource))) }
-    end
-    def hash(resource, { algo, { module, fun, 1 } }) do
-        { algo, apply(module, fun, [to_binary(resource)]) }
-    end
-    def hash(resource, { algo, { module, fun, args } }) do
-        { algo, apply(module, fun, args ++ [to_binary(resource)]) }
-    end
+    @spec hash(t | Content.t, Integrity.algo | { Integrity.algo, Callback.callback(binary, any) }) :: Integrity.checksum
     def hash(resource, { algo, fun }) do
-        { algo, fun.(to_binary(resource)) }
+        { algo, Callback.call(fun, [to_binary(resource)]) }
     end
     def hash(resource, algo) do
         { algo, :crypto.hash(algo, to_binary(resource)) }
