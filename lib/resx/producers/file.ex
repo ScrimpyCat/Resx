@@ -1,4 +1,38 @@
 defmodule Resx.Producers.File do
+    @moduledoc """
+      A producer to handle file URIs.
+
+        Resx.Producers.File.open("file:///path/to/file.txt")
+
+      ### Types
+
+      MIME types are inferred from file extension names. A chained file extension
+      will result in multiple MIME types (e.g. `file.jpg.txt => ["text/plain", "image/jpeg"]`).
+      Unsupported types will default to `"application/octet-stream"`. Custom MIME
+      types can be added to the config.
+
+      ### Hostnames
+
+      Currently there is no support for remote files.
+
+      ### Files/Directory Access
+
+      Files that can be opened need to be explicitly included. This can be done by
+      configuring the `:access` configuration option for `Resx.Producers.File`.
+
+        config :resx, Resx.Producers.File,
+            access: [
+                "path/to/file.txt",
+                "path/*/*.jpg",
+                "**/*.{ex,exs}",
+                ~r/.*?\/to\/another.txt/,
+                { MyFileAccessGranter, :can_access?, 1 }
+            ]
+
+      The `:access` field should contain either a list of strings, or regexes, or
+      a callback functions that expect a string and returns a boolean. Valid function
+      formats are any callback variant, see `Resx.Callback` for more information.
+    """
     use Resx.Producer
 
     alias Resx.Resource
