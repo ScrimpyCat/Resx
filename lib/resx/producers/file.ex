@@ -39,6 +39,7 @@ defmodule Resx.Producers.File do
     alias Resx.Resource.Content
     alias Resx.Resource.Reference
     alias Resx.Resource.Reference.Integrity
+    alias Resx.Callback
 
     defp to_path(%Reference{ repository: path }), do: check_access(path)
     defp to_path(%URI{ scheme: "file", host: host, path: path }) when host in [nil, "localhost"], do: check_access(path)
@@ -47,7 +48,7 @@ defmodule Resx.Producers.File do
     defp to_path(_), do: { :error, { :invalid_reference, "not a file reference" } }
 
     defp check_access(path) do
-        if Enum.any?(Application.get_env(:resx, Resx.Producers.File, [include: []])[:include], &include_path?(path, &1)) do
+        if Enum.any?(Application.get_env(:resx, Resx.Producers.File, [access: []])[:access], &include_path?(path, &1)) do
             { :ok, path }
         else
             { :error, { :invalid_reference, "protected file" } }
@@ -131,7 +132,9 @@ defmodule Resx.Producers.File do
     defp path_match(path, [match|glob], false), do: path_match(path, [match_to_regex(match)|glob], true)
     defp path_match(_, _, _), do: false
 
-    defp include_path?(path, glob), do: path_match(Path.split(path), Path.split(glob))
+    defp include_path?(path, regex = %Regex{}), do: Regex.match?(regex, path)
+    defp include_path?(path, glob) when is_binary(glob), do: path_match(Path.split(path), Path.split(glob))
+    defp include_path?(path, fun), do: Callback.call(fun, [path])
 
     @impl Resx.Producer
     def open(reference) do
