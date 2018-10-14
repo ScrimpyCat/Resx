@@ -48,15 +48,16 @@ defmodule Resx.Producers.File do
     alias Resx.Resource.Reference.Integrity
     alias Resx.Callback
 
-    defp to_path(%Reference{ repository: path }), do: check_access(path)
-    defp to_path(%URI{ scheme: "file", host: host, path: path }) when host in [nil, "localhost"], do: check_access(path)
-    defp to_path(%URI{ scheme: "file" }), do: { :error, "only supports local file references" }
+    defp to_path(%Reference{ repository: { node, path } }), do: check_access(node, path)
+    defp to_path(%URI{ scheme: "file", host: host, path: path, userinfo: nil }) when host in [nil, "localhost"], do: check_access(node(), path)
+    defp to_path(%URI{ scheme: "file", host: host, path: path, userinfo: user }), do: check_access(String.to_atom(user <> "@" <> host), path)
+    defp to_path(%URI{ scheme: "file" }), do: { :error, "only supports local or remote node file references" }
     defp to_path(uri) when is_binary(uri), do: URI.decode(uri) |> URI.parse |> to_path
     defp to_path(_), do: { :error, { :invalid_reference, "not a file reference" } }
 
-    defp check_access(path) do
+    defp check_access(node, path) do
         if Enum.any?(Application.get_env(:resx, Resx.Producers.File, [access: []])[:access], &include_path?(path, &1)) do
-            { :ok, path }
+            { :ok, { node, path } }
         else
             { :error, { :invalid_reference, "protected file" } }
         end
@@ -143,32 +144,64 @@ defmodule Resx.Producers.File do
     defp include_path?(path, glob) when is_binary(glob), do: path_match(Path.split(path), Path.split(glob))
     defp include_path?(path, fun), do: Callback.call(fun, [path])
 
+
+    defp call(node, fun, args \\ []) do
+        case node() do
+            ^node -> apply(__MODULE__, fun, args)
+            _ ->
+                case :rpc.call(node, __MODULE__, fun, args) do
+                    { :badrpc, reason } -> { :error, { :internal, reason } }
+                    result -> result
+                end
+        end
+    end
+
+    @doc false
+    def file_open(repo = { _, path }) do
+        with { :read, { :ok, data } } <- { :read, File.read(path) },
+             { :stat, timestamp } when is_integer(timestamp) <- { :stat, timestamp(path) } do
+                content = %Content{
+                    type: extensions(path),
+                    data: data
+                }
+                resource = %Resource{
+                    reference: %Reference{
+                        adapter: __MODULE__,
+                        repository: repo,
+                        integrity: %Integrity{
+                            checksum: Resource.hash(content),
+                            timestamp: timestamp
+                        }
+                    },
+                    content: content
+                }
+
+                { :ok,  resource }
+        else
+            { _, error } -> format_posix_error(error, path)
+        end
+    end
+
+    @doc false
+    def file_exists?(path), do: { :ok, File.exists?(path) }
+
+    @doc false
+    def file_attributes(path) do
+        case File.stat(path, time: :posix) do
+            { :ok, stat } ->
+                attributes =
+                    Map.delete(stat, :__struct__)
+                    |> Map.put(:name, Path.basename(path))
+
+                { :ok, attributes }
+            error -> format_posix_error(error, path)
+        end
+    end
+
     @impl Resx.Producer
     def open(reference) do
         case to_path(reference) do
-            { :ok, path } ->
-                with { :read, { :ok, data } } <- { :read, File.read(path) },
-                     { :stat, timestamp } when is_integer(timestamp) <- { :stat, timestamp(path) } do
-                        content = %Content{
-                            type: extensions(path),
-                            data: data
-                        }
-                        resource = %Resource{
-                            reference: %Reference{
-                                adapter: __MODULE__,
-                                repository: path,
-                                integrity: %Integrity{
-                                    checksum: Resource.hash(content),
-                                    timestamp: timestamp
-                                }
-                            },
-                            content: content
-                        }
-
-                        { :ok,  resource }
-                else
-                    { _, error } -> format_posix_error(error, path)
-                end
+            { :ok, repo = { node, _ } } -> call(node, :file_open, [repo])
             error -> error
         end
     end
@@ -176,7 +209,7 @@ defmodule Resx.Producers.File do
     @impl Resx.Producer
     def exists?(reference) do
         case to_path(reference) do
-            { :ok, path } -> { :ok, File.exists?(path) }
+            { :ok, { node, path } } -> call(node, :file_exists?, [path])
             error -> error
         end
     end
@@ -194,7 +227,7 @@ defmodule Resx.Producers.File do
     @impl Resx.Producer
     def resource_uri(reference) do
         case to_path(reference) do
-            { :ok, path } -> { :ok, URI.encode("file://" <> path) }
+            { :ok, { node, path } } -> { :ok, URI.encode("file://" <> to_string(node) <> path) }
             error -> error
         end
     end
@@ -202,16 +235,7 @@ defmodule Resx.Producers.File do
     @impl Resx.Producer
     def resource_attributes(reference) do
         case to_path(reference) do
-            { :ok, path } ->
-                case File.stat(path, time: :posix) do
-                    { :ok, stat } ->
-                        attributes =
-                            Map.delete(stat, :__struct__)
-                            |> Map.put(:name, Path.basename(path))
-
-                        { :ok, attributes }
-                    error -> format_posix_error(error, path)
-                end
+            { :ok, { node, path } } -> call(node, :file_attributes, [path])
             error -> error
         end
     end
