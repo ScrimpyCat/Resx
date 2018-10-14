@@ -56,7 +56,11 @@ defmodule Resx.Producers.File do
     defp to_path(_), do: { :error, { :invalid_reference, "not a file reference" } }
 
     defp check_access(node, path) do
-        if Enum.any?(Application.get_env(:resx, Resx.Producers.File, [access: []])[:access], &include_path?(path, &1)) do
+        if Enum.any?(Application.get_env(:resx, Resx.Producers.File, [access: []])[:access], fn
+            { ^node, access } -> include_path?(path, access)
+            { _, _ } -> false
+            access -> include_path?(path, access)
+        end) do
             { :ok, { node, path } }
         else
             { :error, { :invalid_reference, "protected file" } }
