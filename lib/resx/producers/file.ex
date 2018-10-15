@@ -13,7 +13,14 @@ defmodule Resx.Producers.File do
 
       ### Hostnames
 
-      Currently there is no support for remote files.
+      Valid hostnames can either be an erlang node name, `localhost`, or not
+      specified.
+
+      When referencing a file without providing a hostname or using `localhost`,
+      the file will be referenced from the calling node. This means that if a
+      reference was created and has been passed to another node, any requests that
+      need to access this file will then be sent back to the original node to be
+      processed.
 
       ### Files/Directory Access
 
@@ -26,13 +33,69 @@ defmodule Resx.Producers.File do
                 "path/*/*.jpg",
                 "**/*.{ex,exs}",
                 ~r/.*?\/to\/another.txt/,
-                { MyFileAccessGranter, :can_access?, 1 }
+                { MyFileAccessGranter, :can_access?, 1 },
+                { :"foo@127.0.0.1", "**/some-file.txt" }
             ]
 
-      The `:access` field should contain either a list of strings, or regexes, or
-      a callback functions that expect a string (glob pattern) and returns a boolean.
-      Valid function formats are any callback variant, see `Resx.Callback` for more
-      information.
+      The `:access` field should contain either a list of strings, regexes, or
+      callback functions, which will be applied to every node or it can be tagged
+      with the node (`{ node, pattern }`) if the rule should only be applied to
+      files found at that node. Callback functions expect a string (glob pattern)
+      and return a boolean. Valid function formats are any callback variant, see
+      `Resx.Callback` for more information.
+
+      File access rules are applied on the node making the request. This means
+      that if node `foo@127.0.0.1` has the access rules:
+
+        [
+            "/one.txt",
+            {:"foo@127.0.0.1", "/two.txt"},
+            {:"bar@127.0.0.1", "/three.txt"}
+        ]
+
+      And node `bar@127.0.0.1` has the access rules:
+
+        [
+            {:"bar@127.0.0.1", "/three.txt"}
+        ]
+
+      If node `foo@127.0.0.1` attempted to open the following files it would get
+      these responses:
+
+        \# Allowed
+        Resx.Producers.File.open("file:///one.txt") \# => open file on node foo@127.0.0.1
+        Resx.Producers.File.open("file://foo@127.0.0.1/one.txt") \# => open file on node foo@127.0.0.1
+        Resx.Producers.File.open("file://bar@127.0.0.1/one.txt") \# => open file on node bar@127.0.0.1
+
+        Resx.Producers.File.open("file:///two.txt") \# => open file on node foo@127.0.0.1
+        Resx.Producers.File.open("file://foo@127.0.0.1/two.txt") \# => open file on node foo@127.0.0.1
+
+        Resx.Producers.File.open("file://bar@127.0.0.1/three.txt") \# => open file on node bar@127.0.0.1
+
+        \# Not Allowed
+        Resx.Producers.File.open("file://bar@127.0.0.1/two.txt")
+
+        Resx.Producers.File.open("file:///three.txt")
+        Resx.Producers.File.open("file://foo@127.0.0.1/three.txt")
+
+
+      If node `bar@127.0.0.1` attempted to open the following files it would get
+      these responses:
+
+        \# Allowed
+        Resx.Producers.File.open("file:///three.txt") \# => open file on node bar@127.0.0.1
+        Resx.Producers.File.open("file://bar@127.0.0.1/three.txt") \# => open file on node bar@127.0.0.1
+
+        \# Not Allowed
+        Resx.Producers.File.open("file:///one.txt")
+        Resx.Producers.File.open("file://foo@127.0.0.1/one.txt")
+        Resx.Producers.File.open("file://bar@127.0.0.1/one.txt")
+
+        Resx.Producers.File.open("file:///two.txt")
+        Resx.Producers.File.open("file://foo@127.0.0.1/two.txt")
+        Resx.Producers.File.open("file://bar@127.0.0.1/two.txt")
+
+        Resx.Producers.File.open("file://foo@127.0.0.1/three.txt")
 
       #### Glob Pattern
 
