@@ -112,7 +112,15 @@ defmodule Resx.Producers.File do
       * Accessing a file's attributes
 
       These distributed requests are done using the `rpc` module provided by
-      the erlang runtime.
+      the erlang runtime. This can be overridden by configuring the `:rpc` field
+      to a callback function that will be used as the replacement rpc handler. The
+      callback function expects 4 arguments (node, module, fun, args) and should
+      return the result of target function otherwise any non-ok/error tuple to be
+      used as the internal error. Valid function formats are any callback variant,
+      see `Resx.Callback` for more information.
+
+        config :resx, Resx.Producers.File,
+            rpc: { :gen_rpc, :call, 4 }
 
       Resources contain a reference to the node they came from. So if a resource
       is passed around to other nodes, it will still be able to guarantee access.
@@ -155,7 +163,7 @@ defmodule Resx.Producers.File do
     defp to_path(_), do: { :error, { :invalid_reference, "not a file reference" } }
 
     defp check_access(node, path) do
-        if Enum.any?(Application.get_env(:resx, Resx.Producers.File, [access: []])[:access], fn
+        if Enum.any?(config(:access, []), fn
             { ^node, access } -> include_path?(path, access)
             { _, _ } -> false
             access -> include_path?(path, access)
@@ -247,14 +255,18 @@ defmodule Resx.Producers.File do
     defp include_path?(path, glob) when is_binary(glob), do: path_match(Path.split(path), Path.split(glob))
     defp include_path?(path, fun), do: Callback.call(fun, [path])
 
+    defp config(key, default \\ nil) do
+        Application.get_env(:resx, __MODULE__)[key] || default
+    end
 
     defp call(node, fun, args \\ []) do
         case node() do
             ^node -> apply(__MODULE__, fun, args)
             _ ->
-                case :rpc.call(node, __MODULE__, fun, args) do
-                    { :badrpc, reason } -> { :error, { :internal, reason } }
-                    result -> result
+                rpc = config(:rpc, { :rpc, :call, 4 })
+                case Callback.call(rpc, [node, __MODULE__, fun, args]) do
+                    result = { type, _ } when type in [:ok, :error] -> result
+                    reason -> { :error, { :internal, reason } }
                 end
         end
     end
