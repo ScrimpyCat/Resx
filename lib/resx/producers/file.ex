@@ -102,6 +102,42 @@ defmodule Resx.Producers.File do
       Glob pattern rules follow the syntax of `Path.wildcard/2`, with the addition
       of an negative character match `[!char1,char2,...]`. e.g. `[!abc]` or `[!a-c]`
       (match any character other than `a`, `b`, or `c`).
+
+      #### Distribution
+
+      The following operations need to talk to the node the file originates from.
+
+      * Opening a file
+      * Checking if a file exists
+      * Accessing a file's attributes
+
+      These distributed requests are done using the `rpc` module provided by
+      the erlang runtime.
+
+      Resources contain a reference to the node they came from. So if a resource
+      is passed around to other nodes, it will still be able to guarantee access.
+
+      An example of this is in the diagram below. If `foo@127.0.0.1` requests to
+      open a file on `bar@127.0.0.1`, and then passes the resource to `baz@127.0.0.1`
+      which then wants to repoen it (get the latest changes) the request will go
+      back to `bar@127.0.0.1`.
+
+      ```bob
+      +---------------+                   +---------------+
+      |               | ----- open -----> |               |
+      | foo@127.0.0.1 |                   |               |
+      |               | <--- resource --- |               |
+      +---------------+                   |               |
+              |                           |               |
+          resource                        | bar@127.0.0.1 |
+              |                           |               |
+              v                           |               |
+      +---------------+                   |               |
+      |               | ---- reopen ----> |               |
+      | baz@127.0.0.1 |                   |               |
+      |               | <--- resource --- |               |
+      +---------------+                   +---------------+
+      ```
     """
     use Resx.Producer
 
