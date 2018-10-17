@@ -245,7 +245,7 @@ defmodule Resx.Producers.File do
         if Regex.match?(match, component) do
             path_match(path, glob, false)
         else
-            path_match(path, [match|glob], true)
+            false
         end
     end
     defp path_match(path, [match|glob], false), do: path_match(path, [match_to_regex(match)|glob], true)
