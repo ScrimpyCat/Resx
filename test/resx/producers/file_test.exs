@@ -2,6 +2,7 @@ defmodule Resx.Producers.FileTest do
     use ExUnit.Case
 
     alias Resx.Resource
+    alias Resx.Resource.Content
 
     describe "open/1" do
         test "no access" do
@@ -173,6 +174,11 @@ defmodule Resx.Producers.FileTest do
             assert { :error, { :unknown_resource, _ } } = Resource.open("file://localhost/bar.txt")
             assert { :error, { :unknown_resource, _ } } = Resource.open("file://#{node()}/bar.txt")
             assert { :error, { :invalid_reference, _ } } = Resource.open("file://foo@bar/bar.txt")
+        end
+
+        test "content" do
+            Application.put_env(:resx, Resx.Producers.File, access: ["**"])
+            assert { :ok, %Resource{ content: %Content{ type: "application/octet-stream", data: "defmodule Resx.Producers.FileTest do" <> _ } } } = Resource.open("file://#{__DIR__}/file_test.exs")
         end
     end
 end
