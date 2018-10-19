@@ -181,4 +181,11 @@ defmodule Resx.Producers.FileTest do
             assert { :ok, %Resource{ content: %Content{ type: "application/octet-stream", data: "defmodule Resx.Producers.FileTest do" <> _ } } } = Resource.open("file://#{__DIR__}/file_test.exs")
         end
     end
+
+    test "uri/1" do
+        Application.put_env(:resx, Resx.Producers.File, access: ["**"])
+        { :ok, resource } = Resource.open("file://#{__DIR__}/file_test.exs")
+
+        assert { :ok, URI.encode("file://#{node()}#{__DIR__}/file_test.exs") } == Resource.uri(resource)
+    end
 end
