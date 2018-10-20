@@ -188,4 +188,13 @@ defmodule Resx.Producers.FileTest do
 
         assert { :ok, URI.encode("file://#{node()}#{__DIR__}/file_test.exs") } == Resource.uri(resource)
     end
+
+    describe "attributes" do
+        test "name field" do
+            Application.put_env(:resx, Resx.Producers.File, access: ["**"])
+            { :ok, resource } = Resource.open("file://#{__DIR__}/file_test.exs")
+
+            assert { :ok, "file_test.exs" } == Resource.attribute(resource, :name)
+        end
+    end
 end
