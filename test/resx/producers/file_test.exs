@@ -190,6 +190,16 @@ defmodule Resx.Producers.FileTest do
     end
 
     describe "attributes" do
+        test "keys" do
+            Application.put_env(:resx, Resx.Producers.File, access: ["**"])
+            { :ok, resource } = Resource.open("file://#{__DIR__}/file_test.exs")
+
+            assert { :ok, keys } = Resource.attribute_keys(resource)
+
+            [:__struct__|result] = Enum.sort([:name|Map.keys(%File.Stat{})])
+            assert result == Enum.sort(keys)
+        end
+
         test "name field" do
             Application.put_env(:resx, Resx.Producers.File, access: ["**"])
             { :ok, resource } = Resource.open("file://#{__DIR__}/file_test.exs")
