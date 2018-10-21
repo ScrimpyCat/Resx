@@ -64,24 +64,7 @@ defmodule Resx.Producers.Data do
     @impl Resx.Producer
     def open(reference) do
         case to_data(reference) do
-            { :ok, repo = { type, _, data } } ->
-                content = %Content{
-                    type: type,
-                    data: data
-                }
-                resource = %Resource{
-                    reference: %Reference{
-                        adapter: __MODULE__,
-                        repository: repo,
-                        integrity: %Integrity{
-                            checksum: Resource.hash(content),
-                            timestamp: DateTime.to_unix(DateTime.utc_now)
-                        }
-                    },
-                    content: content
-                }
-
-                { :ok, resource }
+            { :ok, { type, attributes, data } } -> { :ok, new(data, type, attributes) }
             error -> error
         end
     end
@@ -131,5 +114,64 @@ defmodule Resx.Producers.Data do
             { :ok, { _, attributes, _ } } -> { :ok, attributes }
             error -> error
         end
+    end
+
+    @doc """
+      Manually create a data resource.
+
+      Converts the static resource state or a binary into a data resource.
+
+      The type defaults to an `"application/octet-stream"` or the parent type
+      of the existing resource. This can be overridden by explicitly passing
+      a type to the `:type` option.
+
+      No attributes are attached to the data resource by default. This can be
+      overridden by passing the attributes to the `:attributes` option.
+
+        iex> { :ok, resource } = Resx.Producers.Data.new("hello")
+        ...> resource.content
+        %Resx.Resource.Content{data: "hello", type: "application/octet-stream"}
+
+        iex> { :ok, resource } = Resx.Producers.Data.new("hello", type: "text/plain")
+        ...> resource.content.type
+        "text/plain"
+
+        iex> { :ok, resource } = Resx.Producers.Data.new("hello")
+        ...> Resx.Resource.attribute(resource, "charset")
+        { :error, { :unknown_key, "charset" } }
+
+        iex> { :ok, resource } = Resx.Producers.Data.new("hello", attributes: %{ "charset" => "US-ASCII" })
+        ...> Resx.Resource.attribute(resource, "charset")
+        { :ok, "US-ASCII" }
+    """
+    @spec new(Resource.t | binary, [type: String.t, attributes: %{ optional(Resource.attribute_key) => any }]) :: { :ok, Resource.t } | Resx.error(Resx.resource_error | Resx.reference_error)
+    def new(data, opts \\ [])
+    def new(%Resource{ content: %{ type: type, data: data } }, opts) do
+        type = case type do
+            [type|_] -> type
+            type -> type
+        end
+
+        { :ok, new(data, opts[:type] || type, opts[:attributes] || %{}) }
+    end
+    def new(data, opts), do: { :ok, new(data, opts[:type] || "application/octet-stream", opts[:attributes] || %{}) }
+
+    @spec new(binary, String.t, %{ optional(Resource.attribute_key) => any }) :: Resource.t
+    defp new(data, type, attributes) do
+        content = %Content{
+            type: type,
+            data: data
+        }
+        %Resource{
+            reference: %Reference{
+                adapter: __MODULE__,
+                repository: { type, attributes, data },
+                integrity: %Integrity{
+                    checksum: Resource.hash(content),
+                    timestamp: DateTime.to_unix(DateTime.utc_now)
+                }
+            },
+            content: content
+        }
     end
 end
