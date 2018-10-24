@@ -3,7 +3,7 @@ defmodule Resx.Resource.Content do
       The content of a resource.
 
         %Resx.Resource.Content{
-            type: "text/html",
+            type: ["text/html]",
             data: "<p>Hello</p>"
         }
     """
@@ -14,9 +14,10 @@ defmodule Resx.Resource.Content do
 
     defstruct [:type, :data]
 
-    @type mime :: String.t | [String.t]
+    @type mime :: String.t
+    @type type :: [mime, ...]
     @type t :: %Content{
-        type: mime,
+        type: type,
         data: any
     }
 end

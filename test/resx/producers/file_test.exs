@@ -178,7 +178,7 @@ defmodule Resx.Producers.FileTest do
 
         test "content" do
             Application.put_env(:resx, Resx.Producers.File, access: ["**"])
-            assert { :ok, %Resource{ content: %Content{ type: "application/octet-stream", data: "defmodule Resx.Producers.FileTest do" <> _ } } } = Resource.open("file://#{__DIR__}/file_test.exs")
+            assert { :ok, %Resource{ content: %Content{ type: ["application/octet-stream"], data: "defmodule Resx.Producers.FileTest do" <> _ } } } = Resource.open("file://#{__DIR__}/file_test.exs")
         end
     end
 

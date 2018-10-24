@@ -130,11 +130,11 @@ defmodule Resx.Producers.Data do
 
         iex> { :ok, resource } = Resx.Producers.Data.new("hello")
         ...> resource.content
-        %Resx.Resource.Content{data: "hello", type: "application/octet-stream"}
+        %Resx.Resource.Content{ data: "hello", type: ["application/octet-stream"] }
 
         iex> { :ok, resource } = Resx.Producers.Data.new("hello", type: "text/plain")
         ...> resource.content.type
-        "text/plain"
+        ["text/plain"]
 
         iex> { :ok, resource } = Resx.Producers.Data.new("hello")
         ...> Resx.Resource.attribute(resource, "charset")
@@ -159,7 +159,10 @@ defmodule Resx.Producers.Data do
     @spec new(binary, String.t, %{ optional(Resource.attribute_key) => any }) :: Resource.t
     defp new(data, type, attributes) do
         content = %Content{
-            type: type,
+            type: case type do
+                type when is_list(type) -> type
+                type -> [type]
+            end,
             data: data
         }
         %Resource{

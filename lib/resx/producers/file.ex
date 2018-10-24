@@ -178,8 +178,8 @@ defmodule Resx.Producers.File do
         Path.basename(path)
         |> String.split(".", trim: true)
         |> case do
-            [_, extension] -> MIME.type(extension)
-            [_] -> nil
+            [_, extension] -> [MIME.type(extension)]
+            [_] -> ["application/octet-stream"]
             [_|extensions] -> Enum.reduce(extensions, [], &([MIME.type(&1)|&2]))
         end
     end

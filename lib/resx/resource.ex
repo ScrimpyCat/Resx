@@ -91,23 +91,23 @@ defmodule Resx.Resource do
       Valid function formats are any callback variant, see `Resx.Callback` for more
       information.
 
-        iex> Resx.Resource.hash(%Resx.Resource.Content{ type: :string, data: "Hello" }, { :crc32, { :erlang, :crc32, 1 } })
-        { :crc32, 1916479825 }
+        iex> Resx.Resource.hash(%Resx.Resource.Content{ type: ["text/plain"], data: "Hello" }, { :crc32, { :erlang, :crc32, 1 } })
+        { :crc32, 1244230748 }
 
-        iex> Resx.Resource.hash(%Resx.Resource.Content{ type: :string, data: "Hello" }, { :crc32, { :erlang, :crc32, [] } })
-        { :crc32, 1916479825 }
+        iex> Resx.Resource.hash(%Resx.Resource.Content{ type: ["text/plain"], data: "Hello" }, { :crc32, { :erlang, :crc32, [] } })
+        { :crc32, 1244230748 }
 
-        iex> Resx.Resource.hash(%Resx.Resource.Content{ type: :string, data: "Hello" }, { :md5, { :crypto, :hash, [:md5] } })
-        { :md5, <<182, 117, 169, 117, 204, 18, 203, 145, 170, 93, 254, 5, 255, 81, 147, 6>> }
+        iex> Resx.Resource.hash(%Resx.Resource.Content{ type: ["text/plain"], data: "Hello" }, { :md5, { :crypto, :hash, [:md5] } })
+        { :md5, <<11, 42, 163, 52, 185, 160, 71, 166, 238, 225, 51, 70, 234, 139, 186, 19>> }
 
-        iex> Resx.Resource.hash(%Resx.Resource.Content{ type: :string, data: "Hello" }, { :hmac_md5_5, { :crypto, :hmac, [:md5, "secret", 5], 2 } })
-        { :hmac_md5_5, <<191, 168, 210, 216, 244>> }
+        iex> Resx.Resource.hash(%Resx.Resource.Content{ type: ["text/plain"], data: "Hello" }, { :hmac_md5_5, { :crypto, :hmac, [:md5, "secret", 5], 2 } })
+        { :hmac_md5_5, <<146, 5, 93, 75, 11>> }
 
-        iex> Resx.Resource.hash(%Resx.Resource.Content{ type: :string, data: "Hello" }, :md5)
-        { :md5, <<182, 117, 169, 117, 204, 18, 203, 145, 170, 93, 254, 5, 255, 81, 147, 6>> }
+        iex> Resx.Resource.hash(%Resx.Resource.Content{ type: ["text/plain"], data: "Hello" }, :md5)
+        { :md5, <<11, 42, 163, 52, 185, 160, 71, 166, 238, 225, 51, 70, 234, 139, 186, 19>> }
 
-        iex> Resx.Resource.hash(%Resx.Resource.Content{ type: :string, data: "Hello" }, { :base64, &Base.encode64/1 })
-        { :base64, "g2gCZAAGc3RyaW5nbQAAAAVIZWxsbw==" }
+        iex> Resx.Resource.hash(%Resx.Resource.Content{ type: ["text/plain"], data: "Hello" }, { :base64, &Base.encode64/1 })
+        { :base64, "g2gCbAAAAAFtAAAACnRleHQvcGxhaW5qbQAAAAVIZWxsbw==" }
     """
     @spec hash(t | Content.t, Integrity.algo | { Integrity.algo, Callback.callback(binary, any) }) :: Integrity.checksum
     def hash(resource, { algo, fun }) do
