@@ -228,7 +228,7 @@ defmodule Resx.Producers.File do
     defp path_match([], [], _), do: true
     defp path_match([], ["**"], _), do: true
     defp path_match([], _, _), do: false
-    defp path_match([component|path], ["**", "*"|glob], _), do: path_match(path, ["**"|glob], false)
+    defp path_match([_|path], ["**", "*"|glob], _), do: path_match(path, ["**"|glob], false)
     defp path_match([component|path], ["**", component|glob], _), do: path_match(path, glob, false)
     defp path_match([component|path], ["**", match = %Regex{}|glob], _) do
         if Regex.match?(match, component) do
@@ -238,8 +238,8 @@ defmodule Resx.Producers.File do
         end
     end
     defp path_match(path, ["**", match|glob], false), do: path_match(path, ["**", match_to_regex(match)|glob], true)
-    defp path_match([component|path], glob = ["**"|_], processed), do: path_match(path, glob, processed)
-    defp path_match([component|path], ["*"|glob], _), do: path_match(path, glob, false)
+    defp path_match([_|path], glob = ["**"|_], processed), do: path_match(path, glob, processed)
+    defp path_match([_|path], ["*"|glob], _), do: path_match(path, glob, false)
     defp path_match([component|path], [component|glob], _), do: path_match(path, glob, false)
     defp path_match([component|path], [match = %Regex{}|glob], _) do
         if Regex.match?(match, component) do
