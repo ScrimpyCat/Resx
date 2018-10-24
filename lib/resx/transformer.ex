@@ -5,6 +5,13 @@ defmodule Resx.Transformer do
 
     @callback transform(Resource.t) :: { :ok, resource :: Resource.t } | Resx.error
 
+    @doc """
+      Apply a transformation to a resource.
+
+      A `transformer` must be a module that implements the `Resx.Transformer`
+      behaviour.
+    """
+    @spec apply(Resource.t, module) :: { :ok, Resource.t } | Resx.error
     def apply(resource, transformer) do
         case transformer.transform(resource) do
             { :ok, resource = %{ reference: reference } } ->
