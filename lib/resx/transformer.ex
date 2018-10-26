@@ -8,11 +8,17 @@ defmodule Resx.Transformer do
     @callback transform(Resource.t) :: { :ok, resource :: Resource.t } | Resx.error
 
     defmodule TransformError do
-        defexception [:message, :type, :reason]
+        defexception [:message, :type, :reason, :transformer, :resource]
 
         @impl Exception
-        def exception({ type, reason }) do
-            %TransformError{ message: "failed to transform resource due to #{type} error: #{inspect reason}", type: type, reason: reason }
+        def exception({ resource, transformer, { type, reason } }) do
+            %TransformError{
+                message: "failed to transform resource due to #{type} error: #{inspect reason}",
+                type: type,
+                reason: reason,
+                resource: resource,
+                transformer: transformer
+            }
         end
     end
 
@@ -33,7 +39,7 @@ defmodule Resx.Transformer do
 
     def apply!(resource, transformer) do
         case apply(resource, transformer) do
-            { :error, error } -> raise TransformError, error
+            { :error, error } -> raise TransformError, { resource, transformer, error }
             result -> result
         end
     end
