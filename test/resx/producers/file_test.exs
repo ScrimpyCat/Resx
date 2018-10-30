@@ -189,6 +189,13 @@ defmodule Resx.Producers.FileTest do
         assert { :ok, URI.encode("file://#{node()}#{__DIR__}/file_test.exs") } == Resource.uri(resource)
     end
 
+    test "exists?/1" do
+        Application.put_env(:resx, Resx.Producers.File, access: ["**"])
+
+        assert { :ok, true } == Resource.exists?("file://#{__DIR__}/file_test.exs")
+        assert { :ok, false } == Resource.exists?("file://#{__DIR__}/file_test2.exs")
+    end
+
     describe "attributes" do
         test "keys" do
             Application.put_env(:resx, Resx.Producers.File, access: ["**"])
