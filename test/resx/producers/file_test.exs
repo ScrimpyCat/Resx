@@ -196,6 +196,13 @@ defmodule Resx.Producers.FileTest do
         assert { :ok, false } == Resource.exists?("file://#{__DIR__}/file_test2.exs")
     end
 
+    test "alike?/2" do
+        Application.put_env(:resx, Resx.Producers.File, access: ["**"])
+
+        assert true == Resource.alike?("file://#{__DIR__}/file_test.exs", "file://#{__DIR__}/file_test.exs")
+        assert false == Resource.alike?("file://#{__DIR__}/file_test.exs", "file://#{__DIR__}/file_test2.exs")
+    end
+
     describe "attributes" do
         test "keys" do
             Application.put_env(:resx, Resx.Producers.File, access: ["**"])
