@@ -187,6 +187,9 @@ defmodule Resx.Producers.FileTest do
         { :ok, resource } = Resource.open("file://#{__DIR__}/file_test.exs")
 
         assert { :ok, URI.encode("file://#{node()}#{__DIR__}/file_test.exs") } == Resource.uri(resource)
+
+        Application.put_env(:resx, Resx.Producers.File, access: [])
+        assert { :error, { :invalid_reference, _ } } = Resource.uri(resource)
     end
 
     test "exists?/1" do
@@ -194,12 +197,20 @@ defmodule Resx.Producers.FileTest do
 
         assert { :ok, true } == Resource.exists?("file://#{__DIR__}/file_test.exs")
         assert { :ok, false } == Resource.exists?("file://#{__DIR__}/file_test2.exs")
+
+        Application.put_env(:resx, Resx.Producers.File, access: [])
+        assert { :error, { :invalid_reference, _ } } = Resource.exists?("file://#{__DIR__}/file_test.exs")
+        assert { :error, { :invalid_reference, _ } } = Resource.exists?("file://#{__DIR__}/file_test2.exs")
     end
 
     test "alike?/2" do
         Application.put_env(:resx, Resx.Producers.File, access: ["**"])
 
         assert true == Resource.alike?("file://#{__DIR__}/file_test.exs", "file://#{__DIR__}/file_test.exs")
+        assert false == Resource.alike?("file://#{__DIR__}/file_test.exs", "file://#{__DIR__}/file_test2.exs")
+
+        Application.put_env(:resx, Resx.Producers.File, access: [])
+        assert false == Resource.alike?("file://#{__DIR__}/file_test.exs", "file://#{__DIR__}/file_test.exs")
         assert false == Resource.alike?("file://#{__DIR__}/file_test.exs", "file://#{__DIR__}/file_test2.exs")
     end
 
@@ -212,6 +223,9 @@ defmodule Resx.Producers.FileTest do
 
             [:__struct__|result] = Enum.sort([:name|Map.keys(%File.Stat{})])
             assert result == Enum.sort(keys)
+
+            Application.put_env(:resx, Resx.Producers.File, access: [])
+            assert { :error, { :invalid_reference, _ } } = Resource.attribute_keys(resource)
         end
 
         test "name field" do
@@ -219,6 +233,9 @@ defmodule Resx.Producers.FileTest do
             { :ok, resource } = Resource.open("file://#{__DIR__}/file_test.exs")
 
             assert { :ok, "file_test.exs" } == Resource.attribute(resource, :name)
+
+            Application.put_env(:resx, Resx.Producers.File, access: [])
+            assert { :error, { :invalid_reference, _ } } = Resource.attribute(resource, :name)
         end
     end
 end
