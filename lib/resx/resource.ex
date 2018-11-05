@@ -91,6 +91,9 @@ defmodule Resx.Resource do
       Valid function formats are any callback variant, see `Resx.Callback` for more
       information.
 
+      If the requested hash is the same as the checksum found in the resource, then
+      that checksum will be returned without rehashing the resource content.
+
         iex> Resx.Resource.hash(%Resx.Resource.Content{ type: ["text/plain"], data: "Hello" }, { :crc32, { :erlang, :crc32, 1 } })
         { :crc32, 1244230748 }
 
@@ -108,8 +111,19 @@ defmodule Resx.Resource do
 
         iex> Resx.Resource.hash(%Resx.Resource.Content{ type: ["text/plain"], data: "Hello" }, { :base64, &Base.encode64/1 })
         { :base64, "g2gCbAAAAAFtAAAACnRleHQvcGxhaW5qbQAAAAVIZWxsbw==" }
+
+        iex> Resx.Resource.hash(%Resx.Resource{ reference: %Resx.Resource.Reference{ integrity: %Resx.Resource.Reference.Integrity{ timestamp: 0 }, adapter: nil, repository: nil }, content: %Resx.Resource.Content{ type: ["text/plain"], data: "Hello" } }, :md5)
+        { :md5, <<11, 42, 163, 52, 185, 160, 71, 166, 238, 225, 51, 70, 234, 139, 186, 19>> }
+
+        iex> Resx.Resource.hash(%Resx.Resource{ reference: %Resx.Resource.Reference{ integrity: %Resx.Resource.Reference.Integrity{ checksum: { :foo, 1 }, timestamp: 0 }, adapter: nil, repository: nil }, content: %Resx.Resource.Content{ type: ["text/plain"], data: "Hello" } }, :foo)
+        { :foo, 1 }
+
+        iex> Resx.Resource.hash(%Resx.Resource{ reference: %Resx.Resource.Reference{ integrity: %Resx.Resource.Reference.Integrity{ checksum: { :foo, 1 }, timestamp: 0 }, adapter: nil, repository: nil }, content: %Resx.Resource.Content{ type: ["text/plain"], data: "Hello" } }, :md5)
+        { :md5, <<11, 42, 163, 52, 185, 160, 71, 166, 238, 225, 51, 70, 234, 139, 186, 19>> }
     """
     @spec hash(t | Content.t, Integrity.algo | { Integrity.algo, Callback.callback(binary, any) }) :: Integrity.checksum
+    def hash(%Resource{ reference: %{ integrity: %{ checksum: checksum = { algo, _ } } } }, { algo, _ }), do: checksum
+    def hash(%Resource{ reference: %{ integrity: %{ checksum: checksum = { algo, _ } } } }, algo), do: checksum
     def hash(resource, { algo, fun }) do
         { algo, Callback.call(fun, [to_binary(resource)]) }
     end
