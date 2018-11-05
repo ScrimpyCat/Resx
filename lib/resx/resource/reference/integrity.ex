@@ -10,14 +10,14 @@ defmodule Resx.Resource.Reference.Integrity do
 
     alias Resx.Resource.Reference.Integrity
 
-    @enforce_keys [:checksum, :timestamp]
+    @enforce_keys [:timestamp]
 
     defstruct [:checksum, :timestamp]
 
     @type algo :: atom
     @type checksum :: { algo, any }
     @type t :: %Integrity{
-        checksum: checksum,
+        checksum: nil | checksum,
         timestamp: integer
     }
 end
