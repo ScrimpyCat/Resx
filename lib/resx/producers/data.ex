@@ -170,7 +170,6 @@ defmodule Resx.Producers.Data do
                 adapter: __MODULE__,
                 repository: { type, attributes, data },
                 integrity: %Integrity{
-                    checksum: Resource.hash(content),
                     timestamp: DateTime.to_unix(DateTime.utc_now)
                 }
             },

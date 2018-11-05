@@ -32,7 +32,7 @@ defmodule Resx.Transformer do
     def apply(resource, transformer) do
         case transformer.transform(resource) do
             { :ok, resource = %{ reference: reference } } ->
-                { :ok, %{ resource | reference: %Reference{ adapter: Resx.Producers.Transform, repository: { transformer, reference }, integrity: %Integrity{ checksum: Resource.hash(resource), timestamp: DateTime.to_unix(DateTime.utc_now) } } } }
+                { :ok, %{ resource | reference: %Reference{ adapter: Resx.Producers.Transform, repository: { transformer, reference }, integrity: %Integrity{ timestamp: DateTime.to_unix(DateTime.utc_now) } } } }
             { :error, error } -> { :error, error }
         end
     end

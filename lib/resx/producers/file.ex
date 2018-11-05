@@ -284,7 +284,6 @@ defmodule Resx.Producers.File do
                         adapter: __MODULE__,
                         repository: repo,
                         integrity: %Integrity{
-                            checksum: Resource.hash(content),
                             timestamp: timestamp
                         }
                     },
