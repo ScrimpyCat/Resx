@@ -20,4 +20,9 @@ defmodule Resx.Resource.Content do
         type: type,
         data: any
     }
+
+    def data(%Content{ data: data }), do: data
+    def data(%Content.Stream{ data: data }), do: Enum.join(data)
+
+    def new(content), do: %Content{ type: content.type, data: data(content) }
 end
