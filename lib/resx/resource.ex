@@ -10,6 +10,7 @@ defmodule Resx.Resource do
     alias Resx.Callback
 
     @type attribute_key :: atom | String.t
+    @type content :: Content.t | Content.Stream.t
 
     @enforce_keys [:reference, :content]
 
@@ -17,7 +18,7 @@ defmodule Resx.Resource do
 
     @type t :: %Resource{
         reference: Reference.t,
-        content: Content.t | Content.Stream.t,
+        content: content,
         meta: keyword
     }
 
@@ -76,7 +77,7 @@ defmodule Resx.Resource do
 
       See `hash/2` for more information.
     """
-    @spec hash(t | Content.t | Content.Stream.t) :: Integrity.checksum
+    @spec hash(t | content) :: Integrity.checksum
     def hash(resource) do
         hash(resource, Application.get_env(:resx, :hash, :sha))
     end
@@ -121,7 +122,7 @@ defmodule Resx.Resource do
         iex> Resx.Resource.hash(%Resx.Resource{ reference: %Resx.Resource.Reference{ integrity: %Resx.Resource.Reference.Integrity{ checksum: { :foo, 1 }, timestamp: 0 }, adapter: nil, repository: nil }, content: %Resx.Resource.Content{ type: ["text/plain"], data: "Hello" } }, :md5)
         { :md5, <<11, 42, 163, 52, 185, 160, 71, 166, 238, 225, 51, 70, 234, 139, 186, 19>> }
     """
-    @spec hash(t | Content.t | Content.Stream.t, Integrity.algo | { Integrity.algo, Callback.callback(binary, any) }) :: Integrity.checksum
+    @spec hash(t | content, Integrity.algo | { Integrity.algo, Callback.callback(binary, any) }) :: Integrity.checksum
     def hash(%Resource{ reference: %{ integrity: %{ checksum: checksum = { algo, _ } } } }, { algo, _ }), do: checksum
     def hash(%Resource{ reference: %{ integrity: %{ checksum: checksum = { algo, _ } } } }, algo), do: checksum
     def hash(resource, { algo, fun }) do
