@@ -21,8 +21,10 @@ defmodule Resx.Resource.Content do
         data: any
     }
 
+    @spec data(t | Content.Stream.t) :: any
     def data(%Content{ data: data }), do: data
     def data(%Content.Stream{ data: data }), do: Enum.join(data)
 
+    @spec new(t | Content.Stream.t) :: t
     def new(content), do: %Content{ type: content.type, data: data(content) }
 end
