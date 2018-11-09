@@ -31,6 +31,9 @@ defmodule Resx.Resource.Content.Stream do
         def slice(%{ data: data }), do: Enumerable.slice(data)
     end
 
+    @doc """
+      Make some content streamable.
+    """
     @spec new(t | Content.t) :: t
     def new(%Content{ type: type, data: data }), do: %Content.Stream{ type: type, data: [data] }
     def new(content), do: content
