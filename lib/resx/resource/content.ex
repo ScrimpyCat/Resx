@@ -21,6 +21,9 @@ defmodule Resx.Resource.Content do
         data: any
     }
 
+    @doc """
+      Retrieve the content data.
+    """
     @spec data(t | Content.Stream.t) :: any
     def data(%Content{ data: data }), do: data
     def data(%Content.Stream{ data: data }), do: Enum.join(data)
