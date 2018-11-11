@@ -1,5 +1,6 @@
 defmodule Resx.Producer do
     alias Resx.Resource
+    alias Resx.Resource.Content
     alias Resx.Resource.Reference
 
     @doc """
@@ -12,7 +13,19 @@ defmodule Resx.Producer do
       `resource` is the `Resx.Resource` struct. Otherwise return an appropriate
       error.
     """
-    @callback open(Resx.ref) :: { :ok, resource :: Resource.t } | Resx.error(Resx.resource_error | Resx.reference_error)
+    @callback open(Resx.ref) :: { :ok, resource :: Resource.t(Content.t) } | Resx.error(Resx.resource_error | Resx.reference_error)
+
+    @doc """
+      Optionally implement the behaviour for retrieving a resource stream.
+
+      The reference to the resource can either be an existing `Resx.Resource.Reference`
+      struct, or a URI.
+
+      If the resource was successfully retrieved return `{ :ok, resource }`. Where
+      `resource` is the `Resx.Resource` struct. Otherwise return an appropriate
+      error.
+    """
+    @callback stream(Resx.ref) :: { :ok, resource :: Resource.t(Content.Stream.t) } | Resx.error(Resx.resource_error | Resx.reference_error)
 
     @doc """
       Implement the behaviour for checking whether a resource exists for the given
@@ -90,6 +103,14 @@ defmodule Resx.Producer do
             @behaviour Resx.Producer
 
             @impl Resx.Producer
+            def stream(reference) do
+                case __MODULE__.open(reference) do
+                    { :ok, resource = %Resource{ content: content } } -> { :ok, %{ resource | content: Content.Stream.new(content) } }
+                    error -> error
+                end
+            end
+
+            @impl Resx.Producer
             def resource_attribute(reference, field) do
                 case __MODULE__.resource_attributes(reference) do
                     { :ok, attributes } ->
@@ -110,7 +131,7 @@ defmodule Resx.Producer do
                 end
             end
 
-            defoverridable [resource_attribute: 2, resource_attribute_keys: 1]
+            defoverridable [stream: 1, resource_attribute: 2, resource_attribute_keys: 1]
         end
     end
 end
