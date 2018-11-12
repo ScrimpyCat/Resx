@@ -259,15 +259,20 @@ defmodule Resx.Producers.File do
         Application.get_env(:resx, __MODULE__)[key] || default
     end
 
-    defp call(node, fun, args \\ []) do
+    @doc false
+    def call(node, module, fun, args) do
         case node() do
-            ^node -> apply(__MODULE__, fun, args)
+            ^node -> apply(module, fun, args)
             _ ->
                 rpc = config(:rpc, { :rpc, :call, 4 })
-                case Callback.call(rpc, [node, __MODULE__, fun, args]) do
-                    result = { type, _ } when type in [:ok, :error] -> result
-                    reason -> { :error, { :internal, reason } }
-                end
+                Callback.call(rpc, [node, module, fun, args])
+        end
+    end
+
+    defp call(node, fun, args) do
+        case call(node, __MODULE__, fun, args) do
+            result = { type, _ } when type in [:ok, :error] -> result
+            reason -> { :error, { :internal, reason } }
         end
     end
 
@@ -297,6 +302,31 @@ defmodule Resx.Producers.File do
     end
 
     @doc false
+    def file_stream(repo = { node, path }) do
+        stream = File.stream!(path)
+        case timestamp(path) do
+            timestamp when is_integer(timestamp) ->
+                content = %Content.Stream{
+                    type: extensions(path),
+                    data: %__MODULE__.Stream{ stream: stream, node: node }
+                }
+                resource = %Resource{
+                    reference: %Reference{
+                        adapter: __MODULE__,
+                        repository: repo,
+                        integrity: %Integrity{
+                            timestamp: timestamp
+                        }
+                    },
+                    content: content
+                }
+
+                { :ok,  resource }
+            error -> format_posix_error(error, path)
+        end
+    end
+
+    @doc false
     def file_exists?(path), do: { :ok, File.exists?(path) }
 
     @doc false
@@ -316,6 +346,14 @@ defmodule Resx.Producers.File do
     def open(reference) do
         case to_path(reference) do
             { :ok, repo = { node, _ } } -> call(node, :file_open, [repo])
+            error -> error
+        end
+    end
+
+    @impl Resx.Producer
+    def stream(reference) do
+        case to_path(reference) do
+            { :ok, repo = { node, _ } } -> call(node, :file_stream, [repo])
             error -> error
         end
     end
