@@ -146,6 +146,20 @@ defmodule Resx.Producers.File do
       |               | <--- resource --- |               |
       +---------------+                   +---------------+
       ```
+
+      ### Streams
+
+      File streaming relies on the `File.Stream` type, but allows for distributed
+      access. These follow the same distribution rules as previously outlined,
+      with the addition that operations on the stream will be sent back to the
+      node the file originates from.
+
+      #### Caveats
+
+      One caveat to this approach however, is because access to the file is deferred,
+      the identity of this resource will not be accurate. The timestamp will be the
+      file timestamp at the time of first creating the resource, not necessarily the
+      file timestamp at the time of operating on the content stream.
     """
     use Resx.Producer
 
