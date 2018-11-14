@@ -9,11 +9,14 @@ defmodule Resx.Producer do
       The reference to the resource can either be an existing `Resx.Resource.Reference`
       struct, or a URI.
 
+      The `options` keyword allows for your implementation to expose some configurable
+      settings.
+
       If the resource was successfully retrieved return `{ :ok, resource }`. Where
       `resource` is the `Resx.Resource` struct. Otherwise return an appropriate
       error.
     """
-    @callback open(Resx.ref) :: { :ok, resource :: Resource.t(Content.t) } | Resx.error(Resx.resource_error | Resx.reference_error)
+    @callback open(Resx.ref, options :: keyword) :: { :ok, resource :: Resource.t(Content.t) } | Resx.error(Resx.resource_error | Resx.reference_error)
 
     @doc """
       Optionally implement the behaviour for retrieving a resource stream.
@@ -21,11 +24,14 @@ defmodule Resx.Producer do
       The reference to the resource can either be an existing `Resx.Resource.Reference`
       struct, or a URI.
 
+      The `options` keyword allows for your implementation to expose some configurable
+      settings.
+
       If the resource was successfully retrieved return `{ :ok, resource }`. Where
       `resource` is the `Resx.Resource` struct. Otherwise return an appropriate
       error.
     """
-    @callback stream(Resx.ref) :: { :ok, resource :: Resource.t(Content.Stream.t) } | Resx.error(Resx.resource_error | Resx.reference_error)
+    @callback stream(Resx.ref, options :: keyword) :: { :ok, resource :: Resource.t(Content.Stream.t) } | Resx.error(Resx.resource_error | Resx.reference_error)
 
     @doc """
       Implement the behaviour for checking whether a resource exists for the given
@@ -103,8 +109,8 @@ defmodule Resx.Producer do
             @behaviour Resx.Producer
 
             @impl Resx.Producer
-            def stream(reference) do
-                case __MODULE__.open(reference) do
+            def stream(reference, opts \\ []) do
+                case __MODULE__.open(reference, opts) do
                     { :ok, resource = %Resource{ content: content } } -> { :ok, %{ resource | content: Content.Stream.new(content) } }
                     error -> error
                 end
@@ -131,7 +137,7 @@ defmodule Resx.Producer do
                 end
             end
 
-            defoverridable [stream: 1, resource_attribute: 2, resource_attribute_keys: 1]
+            defoverridable [stream: 1, stream: 2, resource_attribute: 2, resource_attribute_keys: 1]
         end
     end
 end

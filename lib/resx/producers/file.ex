@@ -316,8 +316,8 @@ defmodule Resx.Producers.File do
     end
 
     @doc false
-    def file_stream(repo = { node, path }) do
-        stream = File.stream!(path)
+    def file_stream(repo = { node, path }, opts) do
+        stream = File.stream!(path, opts[:modes] || [], opts[:bytes] || :line)
         case timestamp(path) do
             timestamp when is_integer(timestamp) ->
                 content = %Content.Stream{
@@ -357,7 +357,7 @@ defmodule Resx.Producers.File do
     end
 
     @impl Resx.Producer
-    def open(reference) do
+    def open(reference, _ \\ []) do
         case to_path(reference) do
             { :ok, repo = { node, _ } } -> call(node, :file_open, [repo])
             error -> error
@@ -365,9 +365,9 @@ defmodule Resx.Producers.File do
     end
 
     @impl Resx.Producer
-    def stream(reference) do
+    def stream(reference, opts \\ []) do
         case to_path(reference) do
-            { :ok, repo = { node, _ } } -> call(node, :file_stream, [repo])
+            { :ok, repo = { node, _ } } -> call(node, :file_stream, [repo, opts])
             error -> error
         end
     end

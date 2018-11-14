@@ -47,11 +47,11 @@ defmodule Resx.Resource do
     @doc """
       Open a resource from a pre-existing resource or a resource reference.
     """
-    @spec open(t | Resx.ref) :: { :ok, Resource.t(Content.t) } | Resx.error(Resx.resource_error | Resx.reference_error)
-    def open(resource), do: adapter_call([resource], :open)
+    @spec open(t | Resx.ref, keyword) :: { :ok, Resource.t(Content.t) } | Resx.error(Resx.resource_error | Resx.reference_error)
+    def open(resource, opts \\ []), do: adapter_call([resource, opts], :open)
 
-    @spec stream(t | Resx.ref) :: { :ok, Resource.t(Content.Stream.t) } | Resx.error(Resx.resource_error | Resx.reference_error)
-    def stream(resource), do: adapter_call([resource], :stream)
+    @spec stream(t | Resx.ref, keyword) :: { :ok, Resource.t(Content.Stream.t) } | Resx.error(Resx.resource_error | Resx.reference_error)
+    def stream(resource, opts \\ []), do: adapter_call([resource, opts], :stream)
 
     @spec exists?(t | Resx.ref) :: { :ok, boolean } | Resx.error(Resx.reference_error)
     def exists?(resource), do: adapter_call([resource], :exists?)

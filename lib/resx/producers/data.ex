@@ -62,7 +62,7 @@ defmodule Resx.Producers.Data do
     end
 
     @impl Resx.Producer
-    def open(reference) do
+    def open(reference, _ \\ []) do
         case to_data(reference) do
             { :ok, { type, attributes, data } } -> { :ok, new(data, type, attributes) }
             error -> error

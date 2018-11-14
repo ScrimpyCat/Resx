@@ -43,10 +43,10 @@ defmodule Resx.Producers.Transform do
     end
 
     @impl Resx.Producer
-    def open(reference) do
+    def open(reference, opts \\ []) do
         case to_ref(reference) do
             { :ok, %Reference{ repository: { transformer, reference } } } ->
-                case Resource.open(reference) do
+                case Resource.open(reference, opts) do
                     { :ok, resource } -> Resx.Transformer.apply(resource, transformer)
                     error -> error
                 end
