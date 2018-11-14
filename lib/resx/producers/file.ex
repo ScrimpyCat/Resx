@@ -364,7 +364,19 @@ defmodule Resx.Producers.File do
         end
     end
 
+    @doc """
+      Creates a file resource with streamable contents.
+
+      The options expose the additional arguments that can normally be passed to
+      `File.stream!/3`.
+
+      * `:modes` - expects a value of type `File.stream_mode`. If no modes are provided
+      it defaults to the default modes `File.stream!/3` opens with.
+      * `:bytes` - expects a positive integer for the number bytes to read per request.
+      If it is not provided, it defaults to reading line by line.
+    """
     @impl Resx.Producer
+    @spec stream(Resx.ref, [modes: File.stream_mode, bytes: pos_integer]) :: { :ok, resource :: Resource.t(Content.Stream.t) } | Resx.error(Resx.resource_error | Resx.reference_error)
     def stream(reference, opts \\ []) do
         case to_path(reference) do
             { :ok, repo = { node, _ } } -> call(node, :file_stream, [repo, opts])
