@@ -23,7 +23,7 @@ defmodule Resx.MixProject do
         [
             { :mime, "~> 1.3" },
             { :ex_doc, "~> 0.18", only: :dev, runtime: false },
-            { :simple_markdown, "~> 0.5.3", only: :dev, runtime: false },
+            { :simple_markdown, "~> 0.5.4", only: :dev, runtime: false },
             { :ex_doc_simple_markdown, "~> 0.3", only: :dev, runtime: false },
             { :simple_markdown_extension_svgbob, "~> 0.1", only: :dev, runtime: false }
         ]

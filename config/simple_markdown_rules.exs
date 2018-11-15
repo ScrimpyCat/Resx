@@ -13,8 +13,8 @@ config :simple_markdown,
         table: %{
             match: ~r/\A(.*\|.*)\n((\|?[ :-]*?-[ :-]*){1,}).*((\n.*\|.*)*)/,
             capture: 4,
-            option: fn input, i = [_, { title_index, title_length }, { align_index, align_length }|_] ->
-                titles = binary_part(input, title_index, title_length) |> String.split("|", trim: true)
+            option: fn input, [_, { title_index, title_length }, { align_index, align_length }|_] ->
+                titles = binary_part(input, title_index, title_length) |> String.split("|", trim: true) |> Enum.map(&String.trim/1)
                 aligns = binary_part(input, align_index, align_length) |> String.split("|", trim: true) |> Enum.map(fn
                     ":" <> align -> if String.last(align) == ":", do: :center, else: :left
                     align -> if String.last(align) == ":", do: :right, else: :default
@@ -26,6 +26,7 @@ config :simple_markdown,
             include: [row: %{
                 match: ~r/\A(.*\|.*)+/,
                 capture: 0,
+                format: &String.trim(&1),
                 include: [separator: %{ match: ~r/\A\|/, ignore: true }]
             }]
         },
@@ -42,6 +43,7 @@ config :simple_markdown,
             include: [row: %{
                 match: ~r/\A(.*\|.*)+/,
                 capture: 0,
+                format: &String.trim(&1),
                 include: [separator: %{ match: ~r/\A\|/, ignore: true }]
             }]
         },
@@ -64,7 +66,8 @@ config :simple_markdown,
         emphasis: %{ match: ~r/\A__(.+?)__/, option: :strong, exclude: { :emphasis, :strong } },
         emphasis: %{ match: ~r/\A\*(.+?)\*/, option: :regular, exclude: { :emphasis, :regular } },
         emphasis: %{ match: ~r/\A_(.+?)_/, option: :regular, exclude: { :emphasis, :regular } },
-        blockquote: %{ match: ~r/\A>.*(\n([[:blank:]]|>).*)*/, capture: 0, format: &String.replace(&1, ~r/^> ?/m, ""), exclude: nil }, #(Regex.scan(~r/(?<=> ).*/, &1) |> Enum.join("\n")) },
+        skip_blockquote: %{ match: ~r/\A[^>]*[^> \n]+.*?>.*(\n([[:blank:]]|>).*)*/, capture: 0, exclude: [:skip_blockquote, :blockquote], skip: true },
+        blockquote: %{ match: ~r/\A>.*(\n([[:blank:]]|>).*)*/, capture: 0, format: &String.replace(&1, ~r/^> ?/m, ""), exclude: nil },
         link: %{
             match: fn
                 "[" <> input ->
@@ -74,7 +77,7 @@ config :simple_markdown,
                             "](" <> string, :inner_mid, n, fun -> fun.(string, :inner_end, n + 2, fun)
                             ")" <> string, :inner_end, n, fun -> fun.(string, :mid, n + 1, fun)
                             "](" <> string, :mid, n, fun -> fun.(string, :end, n + 2, fun)
-                            ")" <> string, :end, n, _ -> n + 1
+                            ")" <> _, :end, n, _ -> n + 1
                             <<c :: utf8, string :: binary>>, token, n, fun -> fun.(string, token, n + byte_size(to_string([c])), fun)
                             "", _, n, _ -> n
                         end
@@ -103,7 +106,7 @@ config :simple_markdown,
                             "](" <> string, :inner_mid, n, fun -> fun.(string, :inner_end, n + 2, fun)
                             ")" <> string, :inner_end, n, fun -> fun.(string, :mid, n + 1, fun)
                             "](" <> string, :mid, n, fun -> fun.(string, :end, n + 2, fun)
-                            ")" <> string, :end, n, _ -> n + 1
+                            ")" <> _, :end, n, _ -> n + 1
                             <<c :: utf8, string :: binary>>, token, n, fun -> fun.(string, token, n + byte_size(to_string([c])), fun)
                             "", _, n, _ -> n
                         end
