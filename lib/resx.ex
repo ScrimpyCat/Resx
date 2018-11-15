@@ -45,6 +45,26 @@ defmodule Resx do
         "resx-transform" => Resx.Producers.Transform
     }
 
+    @doc """
+      Get the producer module for the given URI scheme.
+
+      By default the following URI schemes will be matched to these producers:
+
+       Scheme | Producer
+      --------|----------
+      #{Enum.map(@default_producers, fn { k, v } -> "__#{k}__|`#{inspect v}`" end) |> Enum.join("\n")}
+
+      Custom mappings can be provided (or overridden) by configuring the `:producers`
+      key.
+
+        config :resx,
+            producers: %{
+                "data" => MyDataProducer, \# Overrides the default data scheme's producer
+                "file" => nil, \# Overrides the default file scheme to have no producer
+                "custom" => MyCustomProducer \# Add a producer for a new URI scheme
+            }
+    """
+    @spec producer(ref | Resource.t) :: module | nil
     def producer(%Resource{ reference: reference }), do: producer(reference)
     def producer(%Reference{ adapter: adapter }), do: adapter
     def producer(uri) do
