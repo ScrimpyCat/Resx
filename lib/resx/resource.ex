@@ -97,46 +97,59 @@ defmodule Resx.Resource do
       Valid function formats are any callback variant, see `Resx.Callback` for more
       information.
 
+      __Note:__ If the resource content is streamable and a callback is provided for
+      the algo, then the entire content will be decomposed first.
+
       If the requested hash is the same as the checksum found in the resource, then
       that checksum will be returned without rehashing the resource content.
 
         iex> Resx.Resource.hash(%Resx.Resource.Content{ type: ["text/plain"], data: "Hello" }, { :crc32, { :erlang, :crc32, 1 } })
-        { :crc32, 1244230748 }
+        { :crc32, 4157704578 }
 
         iex> Resx.Resource.hash(%Resx.Resource.Content{ type: ["text/plain"], data: "Hello" }, { :crc32, { :erlang, :crc32, [] } })
-        { :crc32, 1244230748 }
+        { :crc32, 4157704578 }
 
         iex> Resx.Resource.hash(%Resx.Resource.Content{ type: ["text/plain"], data: "Hello" }, { :md5, { :crypto, :hash, [:md5] } })
-        { :md5, <<11, 42, 163, 52, 185, 160, 71, 166, 238, 225, 51, 70, 234, 139, 186, 19>> }
+        { :md5, <<139, 26, 153, 83, 196, 97, 18, 150, 168, 39, 171, 248, 196, 120, 4, 215>> }
 
         iex> Resx.Resource.hash(%Resx.Resource.Content{ type: ["text/plain"], data: "Hello" }, { :hmac_md5_5, { :crypto, :hmac, [:md5, "secret", 5], 2 } })
-        { :hmac_md5_5, <<146, 5, 93, 75, 11>> }
+        { :hmac_md5_5, <<243, 134, 128, 59, 99>> }
 
         iex> Resx.Resource.hash(%Resx.Resource.Content{ type: ["text/plain"], data: "Hello" }, :md5)
-        { :md5, <<11, 42, 163, 52, 185, 160, 71, 166, 238, 225, 51, 70, 234, 139, 186, 19>> }
+        { :md5, <<139, 26, 153, 83, 196, 97, 18, 150, 168, 39, 171, 248, 196, 120, 4, 215>> }
 
         iex> Resx.Resource.hash(%Resx.Resource.Content{ type: ["text/plain"], data: "Hello" }, { :base64, &Base.encode64/1 })
-        { :base64, "g2gCbAAAAAFtAAAACnRleHQvcGxhaW5qbQAAAAVIZWxsbw==" }
+        { :base64, "SGVsbG8=" }
 
         iex> Resx.Resource.hash(%Resx.Resource{ reference: %Resx.Resource.Reference{ integrity: %Resx.Resource.Reference.Integrity{ timestamp: 0 }, adapter: nil, repository: nil }, content: %Resx.Resource.Content{ type: ["text/plain"], data: "Hello" } }, :md5)
-        { :md5, <<11, 42, 163, 52, 185, 160, 71, 166, 238, 225, 51, 70, 234, 139, 186, 19>> }
+        { :md5, <<139, 26, 153, 83, 196, 97, 18, 150, 168, 39, 171, 248, 196, 120, 4, 215>> }
 
         iex> Resx.Resource.hash(%Resx.Resource{ reference: %Resx.Resource.Reference{ integrity: %Resx.Resource.Reference.Integrity{ checksum: { :foo, 1 }, timestamp: 0 }, adapter: nil, repository: nil }, content: %Resx.Resource.Content{ type: ["text/plain"], data: "Hello" } }, :foo)
         { :foo, 1 }
 
         iex> Resx.Resource.hash(%Resx.Resource{ reference: %Resx.Resource.Reference{ integrity: %Resx.Resource.Reference.Integrity{ checksum: { :foo, 1 }, timestamp: 0 }, adapter: nil, repository: nil }, content: %Resx.Resource.Content{ type: ["text/plain"], data: "Hello" } }, :md5)
-        { :md5, <<11, 42, 163, 52, 185, 160, 71, 166, 238, 225, 51, 70, 234, 139, 186, 19>> }
+        { :md5, <<139, 26, 153, 83, 196, 97, 18, 150, 168, 39, 171, 248, 196, 120, 4, 215>> }
     """
     @spec hash(t | content, Integrity.algo | { Integrity.algo, Callback.callback(binary, any) }) :: Integrity.checksum
     def hash(%Resource{ reference: %{ integrity: %{ checksum: checksum = { algo, _ } } } }, { algo, _ }), do: checksum
     def hash(%Resource{ reference: %{ integrity: %{ checksum: checksum = { algo, _ } } } }, algo), do: checksum
     def hash(resource, { algo, fun }) do
-        { algo, Callback.call(fun, [to_binary(resource)]) }
+        data = case to_binary(resource) do
+            reducer when is_function(reducer) -> reducer.(<<>>, &<>/2)
+            data -> data
+        end
+        { algo, Callback.call(fun, [data]) }
     end
     def hash(resource, algo) do
-        { algo, :crypto.hash(algo, to_binary(resource)) }
+        hash = case to_binary(resource) do
+            reducer when is_function(reducer) -> reducer.(:crypto.hash_init(algo), &:crypto.hash_update(&2, &1)) |> :crypto.hash_final
+            data -> :crypto.hash(algo, data)
+        end
+        { algo, hash }
     end
 
     defp to_binary(%Resource{ content: content }), do: to_binary(content)
-    defp to_binary(content), do: :erlang.term_to_binary({ content.type, Content.data(content) })
+    defp to_binary(content) do
+        &Enum.reduce(Content.Stream.new(content), &1, &2)
+    end
 end
