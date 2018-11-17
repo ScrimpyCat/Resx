@@ -37,6 +37,14 @@ defmodule Resx.Transformer do
         end
     end
 
+    @doc """
+      Apply a transformation to a resource.
+
+      Raises a `Resx.Transformer.TransformError` if the transformation cannot be applied.
+
+      For more details see `apply/2`.
+    """
+    @spec apply!(Resource.t, module) :: Resource.t | no_return
     def apply!(resource, transformer) do
         case apply(resource, transformer) do
             { :error, error } -> raise TransformError, { resource, transformer, error }
