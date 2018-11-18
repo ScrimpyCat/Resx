@@ -14,10 +14,8 @@ defmodule Resx.Resource.Content.Stream do
 
     defstruct [:type, :data]
 
-    @type mime :: String.t
-    @type type :: [mime, ...]
     @type t :: %Content.Stream{
-        type: type,
+        type: Content.type,
         data: Enumerable.t
     }
 
