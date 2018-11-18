@@ -47,8 +47,8 @@ defmodule Resx.Transformer do
     @spec apply!(Resource.t, module) :: Resource.t | no_return
     def apply!(resource, transformer) do
         case apply(resource, transformer) do
+            { :ok, resource } -> resource
             { :error, error } -> raise TransformError, { resource, transformer, error }
-            result -> result
         end
     end
 end
