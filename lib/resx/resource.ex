@@ -11,6 +11,9 @@ defmodule Resx.Resource do
 
     @type attribute_key :: atom | String.t
     @type content :: Content.t | Content.Stream.t
+    @type hash_state :: any
+    @type streamable_hasher :: { Integrity.algo, initializer :: Callback.callback(Integrity.algo, hash_state), updater :: Callback.callback(hash_state, binary, hash_state), finaliser :: Callback.callback(hash_state, any) }
+    @type hasher :: { Integrity.algo, Callback.callback(binary, any) }
 
     @enforce_keys [:reference, :content]
 
@@ -93,12 +96,16 @@ defmodule Resx.Resource do
       Meta information and resource references are not included in the hash.
 
       Hashing algorithms can take the form of either an atom that is a valid option
-      to `:crypto.hash/2`, or a function that accepts a binary and returns any term.
-      Valid function formats are any callback variant, see `Resx.Callback` for more
-      information.
+      to `:crypto.hash/2`, or a tuple of type `hasher` or `streamable_hasher` to
+      provide a custom hashing function. Valid function formats are any callback
+      variant, see `Resx.Callback` for more information.
 
-      __Note:__ If the resource content is streamable and a callback is provided for
-      the algo, then the entire content will be decomposed first.
+      __Note:__ If the resource content is streamable and a `hasher` is provided for
+      the algo, then the entire content will be decomposed first. If the algo is a
+      `streamable_hasher` then no decomposition will take place.
+
+      The inputs to the initialiser function of a `streamable_hasher` are optional.
+      The rest are all required. 
 
       If the requested hash is the same as the checksum found in the resource, then
       that checksum will be returned without rehashing the resource content.
@@ -115,14 +122,29 @@ defmodule Resx.Resource do
         iex> Resx.Resource.hash(%Resx.Resource.Content.Stream{ type: ["text/plain"], data: ["He", "l", "lo"] }, { :md5, { :crypto, :hash, [:md5] } })
         { :md5, <<139, 26, 153, 83, 196, 97, 18, 150, 168, 39, 171, 248, 196, 120, 4, 215>> }
 
-        iex> Resx.Resource.hash(%Resx.Resource.Content{ type: ["text/plain"], data: "Hello" }, { :hmac_md5_5, { :crypto, :hmac, [:md5, "secret", 5], 2 } })
-        { :hmac_md5_5, <<243, 134, 128, 59, 99>> }
+        iex> Resx.Resource.hash(%Resx.Resource.Content{ type: ["text/plain"], data: "Hello" }, { :md5, { :crypto, :hash_init, 1 }, { :crypto, :hash_update, 2 }, { :crypto, :hash_final, 1 } })
+        { :md5, <<139, 26, 153, 83, 196, 97, 18, 150, 168, 39, 171, 248, 196, 120, 4, 215>> }
+
+        iex> Resx.Resource.hash(%Resx.Resource.Content.Stream{ type: ["text/plain"], data: ["He", "l", "lo"] }, { :md5, { :crypto, :hash_init, 1 }, { :crypto, :hash_update, 2 }, { :crypto, :hash_final, 1 } })
+        { :md5, <<139, 26, 153, 83, 196, 97, 18, 150, 168, 39, 171, 248, 196, 120, 4, 215>> }
 
         iex> Resx.Resource.hash(%Resx.Resource.Content{ type: ["text/plain"], data: "Hello" }, :md5)
         { :md5, <<139, 26, 153, 83, 196, 97, 18, 150, 168, 39, 171, 248, 196, 120, 4, 215>> }
 
         iex> Resx.Resource.hash(%Resx.Resource.Content.Stream{ type: ["text/plain"], data: ["He", "l", "lo"] }, :md5)
         { :md5, <<139, 26, 153, 83, 196, 97, 18, 150, 168, 39, 171, 248, 196, 120, 4, 215>> }
+
+        iex> Resx.Resource.hash(%Resx.Resource.Content{ type: ["text/plain"], data: "Hello" }, { :hmac_md5_5, { :crypto, :hmac, [:md5, "secret", 5], 2 } })
+        { :hmac_md5_5, <<243, 134, 128, 59, 99>> }
+
+        iex> Resx.Resource.hash(%Resx.Resource.Content.Stream{ type: ["text/plain"], data: ["He", "l", "lo"] }, { :hmac_md5_5, { :crypto, :hmac, [:md5, "secret", 5], 2 } })
+        { :hmac_md5_5, <<243, 134, 128, 59, 99>> }
+
+        iex> Resx.Resource.hash(%Resx.Resource.Content{ type: ["text/plain"], data: "Hello" }, { :hmac_md5_5, { :crypto, :hmac_init, [:md5, "secret"], nil }, { :crypto, :hmac_update, 2 }, { :crypto, :hmac_final_n, [5], 0 } })
+        { :hmac_md5_5, <<243, 134, 128, 59, 99>> }
+
+        iex> Resx.Resource.hash(%Resx.Resource.Content.Stream{ type: ["text/plain"], data: ["He", "l", "lo"] }, { :hmac_md5_5, { :crypto, :hmac_init, [:md5, "secret"], nil }, { :crypto, :hmac_update, 2 }, { :crypto, :hmac_final_n, [5], 0 } })
+        { :hmac_md5_5, <<243, 134, 128, 59, 99>> }
 
         iex> Resx.Resource.hash(%Resx.Resource.Content{ type: ["text/plain"], data: "Hello" }, { :base64, &Base.encode64/1 })
         { :base64, "SGVsbG8=" }
@@ -136,9 +158,13 @@ defmodule Resx.Resource do
         iex> Resx.Resource.hash(%Resx.Resource{ reference: %Resx.Resource.Reference{ integrity: %Resx.Resource.Reference.Integrity{ checksum: { :foo, 1 }, timestamp: 0 }, adapter: nil, repository: nil }, content: %Resx.Resource.Content{ type: ["text/plain"], data: "Hello" } }, :md5)
         { :md5, <<139, 26, 153, 83, 196, 97, 18, 150, 168, 39, 171, 248, 196, 120, 4, 215>> }
     """
-    @spec hash(t | content, Integrity.algo | { Integrity.algo, Callback.callback(binary, any) }) :: Integrity.checksum
+    @spec hash(t | content, Integrity.algo | hasher | streamable_hasher) :: Integrity.checksum
     def hash(%Resource{ reference: %{ integrity: %{ checksum: checksum = { algo, _ } } } }, { algo, _ }), do: checksum
     def hash(%Resource{ reference: %{ integrity: %{ checksum: checksum = { algo, _ } } } }, algo), do: checksum
+    def hash(resource, { algo, initialiser, updater, finaliser }) do
+        hash = Callback.call(finaliser, [content_reducer(resource) |> Callback.call([Callback.call(initialiser, [algo], :optional), &Callback.call(updater, [&2, &1])])])
+        { algo, hash }
+    end
     def hash(resource, { algo, fun }) do
         data = content_reducer(resource) |> Callback.call([<<>>, &(&2 <> &1)])
         { algo, Callback.call(fun, [data]) }
