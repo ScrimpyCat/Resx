@@ -7,10 +7,12 @@ defmodule Resx.Callback do
     @typedoc """
       A module-function-parameter tuple.
 
-      This either contains a list of parameters that will be passwed to the function,
+      This either contains a list of parameters that will be passed to the function,
       and any input parameters will be added following those parameters. Or an input
       index or list of indexes will be provided (in which case those inputs will be
-      inserted into the parameter list at those positions).
+      inserted into the parameter list at those positions). Or `nil` inputs, if no
+      inputs should be included, this however is only applicable to calls where the
+      input requirements `:optional`.
 
         { Foo, :bar, [:a, :b] }
         \# If the callback is not passing any inputs then this function will
@@ -44,8 +46,19 @@ defmodule Resx.Callback do
         \# If the callback is passing in 2 inputs ("hello", "world"), then this
         \# function will be called as:
         Foo.bar("hello", :a, "world", :b)
+
+        { Foo, :bar, [:a, :b], nil }
+        \# If the callback is not passing any inputs then this function will
+        \# be called as:
+        Foo.bar(:a, :b)
+        \# If the callback is passing in 1 input ("hello"), then this function
+        \# will be called as:
+        Foo.bar(:a, :b)
+        \# If the callback is passing in 2 inputs ("hello", "world"), then this
+        \# function will be called as:
+        Foo.bar(:a, :b)
     """
-    @type mfp :: { module, atom, list } :: { module, atom, list, non_neg_integer | [non_neg_integer] }
+    @type mfp :: { module, atom, list } | { module, atom, list, nil | non_neg_integer | [non_neg_integer] }
 
     @typedoc """
       A generic callback form with any amount of arguments.
@@ -65,23 +78,26 @@ defmodule Resx.Callback do
     @type callback(arg1, arg2, result) :: (arg1, arg2 -> result) | mfa(2) | mfp
 
     @doc false
-    @spec call(callback, list) :: any
-    def call(fun, inputs \\ [])
-    def call({ module, fun, args, index }, inputs) when is_integer(index) do
+    @spec call(callback, list, :required | :optional) :: any
+    def call(fun, inputs \\ [], input_requirement \\ :required)
+    def call({ module, fun, args, nil }, _, :optional) do
+        apply(module, fun, args)
+    end
+    def call({ module, fun, args, index }, inputs, _) when is_integer(index) do
         { left, right } = Enum.split(args, index)
         apply(module, fun, left ++ inputs ++ right)
     end
-    def call({ module, fun, args, indexes }, inputs) do
+    def call({ module, fun, args, indexes }, inputs, _) do
         args = Enum.zip(indexes, inputs) |> Enum.sort |> insert_args(args)
         apply(module, fun, args)
     end
-    def call({ module, fun, arity }, inputs) when is_integer(arity) and length(inputs) == arity do
+    def call({ module, fun, arity }, inputs, _) when is_integer(arity) and length(inputs) == arity do
         apply(module, fun, inputs)
     end
-    def call({ module, fun, args }, inputs) when is_list(args) do
+    def call({ module, fun, args }, inputs, _) when is_list(args) do
         apply(module, fun, args ++ inputs)
     end
-    def call(fun, inputs) when is_function(fun, length(inputs)) do
+    def call(fun, inputs, _) when is_function(fun, length(inputs)) do
         apply(fun, inputs)
     end
 

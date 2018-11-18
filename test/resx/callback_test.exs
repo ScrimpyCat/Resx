@@ -13,6 +13,12 @@ defmodule Resx.CallbackTest do
         def bar(a, b, c, d), do: { a, b, c, d }
     end
 
+    test "call with required inputs" do
+        assert Exception.exception?(catch_error(Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, [], nil })))
+        assert Exception.exception?(catch_error(Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, [], nil }, [])))
+        assert Exception.exception?(catch_error(Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, [], nil }, [], :required)))
+    end
+
     test "call/0" do
         assert {} == Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, 0 })
         assert {} == Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, [] })
@@ -24,6 +30,7 @@ defmodule Resx.CallbackTest do
         assert {} == Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, [] }, [])
         assert {} == Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, [], 0 }, [])
         assert {} == Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, [], [0, 2] }, [])
+        assert {} == Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, [], nil }, [], :optional)
         assert {} == Resx.Callback.call(&Resx.CallbackTest.Foo.bar/0, [])
     end
 
@@ -36,6 +43,14 @@ defmodule Resx.CallbackTest do
         assert { :a } == Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, [:a], [0, 2] })
         assert { :a } == Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, [], [0, 2] }, [:a])
         assert { :a } == Resx.Callback.call(&Resx.CallbackTest.Foo.bar/1, [:a])
+
+        assert { :a } == Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, [:a], nil }, [], :optional)
+        assert {} == Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, [], nil }, [:a], :optional)
+        assert { :a } == Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, 1 }, [:a], :optional)
+        assert { :a } == Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, [] }, [:a], :optional)
+        assert { :a } == Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, [], 0 }, [:a], :optional)
+        assert { :a } == Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, [], [0, 2] }, [:a], :optional)
+        assert { :a } == Resx.Callback.call(&Resx.CallbackTest.Foo.bar/1, [:a], :optional)
     end
 
     test "call/2" do
@@ -50,6 +65,18 @@ defmodule Resx.CallbackTest do
         assert { :a, :b } == Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, [], [0, 2] }, [:a, :b])
         assert { :b, :a } == Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, [:a], [0, 2] }, [:b])
         assert { :a, :b } == Resx.Callback.call(&Resx.CallbackTest.Foo.bar/2, [:a, :b])
+
+        assert { :a, :b } == Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, [:a, :b], nil }, [], :optional)
+        assert { :a } == Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, [:a], nil }, [:b], :optional)
+        assert {} == Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, [], nil }, [:a, :b], :optional)
+        assert { :a, :b } == Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, 2 }, [:a, :b], :optional)
+        assert { :a, :b } == Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, [] }, [:a, :b], :optional)
+        assert { :a, :b } == Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, [:a] }, [:b], :optional)
+        assert { :a, :b } == Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, [], 0 }, [:a, :b], :optional)
+        assert { :b, :a } == Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, [:a], 0 }, [:b], :optional)
+        assert { :a, :b } == Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, [], [0, 2] }, [:a, :b], :optional)
+        assert { :b, :a } == Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, [:a], [0, 2] }, [:b], :optional)
+        assert { :a, :b } == Resx.Callback.call(&Resx.CallbackTest.Foo.bar/2, [:a, :b], :optional)
     end
 
     test "call/3" do
@@ -67,6 +94,21 @@ defmodule Resx.CallbackTest do
         assert { :c, :a, :b } == Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, [:a, :b], [0, 2] }, [:c])
         assert { :b, :a, :c } == Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, [:a], [0, 2] }, [:b, :c])
         assert { :a, :b, :c } == Resx.Callback.call(&Resx.CallbackTest.Foo.bar/3, [:a, :b, :c])
+
+        assert { :a, :b, :c } == Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, [:a, :b, :c], nil }, [], :optional)
+        assert { :a, :b } == Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, [:a, :b], nil }, [:c], :optional)
+        assert {} == Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, [], nil }, [:a, :b, :c], :optional)
+        assert { :a, :b, :c } == Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, 3 }, [:a, :b, :c], :optional)
+        assert { :a, :b, :c } == Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, [] }, [:a, :b, :c], :optional)
+        assert { :a, :b, :c } == Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, [:a, :b] }, [:c], :optional)
+        assert { :a, :b, :c } == Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, [:a] }, [:b, :c], :optional)
+        assert { :a, :b, :c } == Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, [], 0 }, [:a, :b, :c], :optional)
+        assert { :c, :a, :b } == Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, [:a, :b], 0 }, [:c], :optional)
+        assert { :b, :c, :a } == Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, [:a], 0 }, [:b, :c], :optional)
+        assert { :a, :b } == Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, [], [0, 2] }, [:a, :b, :c], :optional)
+        assert { :c, :a, :b } == Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, [:a, :b], [0, 2] }, [:c], :optional)
+        assert { :b, :a, :c } == Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, [:a], [0, 2] }, [:b, :c], :optional)
+        assert { :a, :b, :c } == Resx.Callback.call(&Resx.CallbackTest.Foo.bar/3, [:a, :b, :c], :optional)
     end
 
     test "call/4" do
@@ -81,5 +123,17 @@ defmodule Resx.CallbackTest do
         assert { :a, :b } == Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, [], [0, 2] }, [:a, :b, :c, :d])
         assert { :c, :a, :d, :b } == Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, [:a, :b], [0, 2] }, [:c, :d])
         assert { :a, :b, :c, :d } == Resx.Callback.call(&Resx.CallbackTest.Foo.bar/4, [:a, :b, :c, :d])
+
+        assert { :a, :b, :c, :d } == Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, [:a, :b, :c, :d], nil }, [], :optional)
+        assert { :a, :b } == Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, [:a, :b], nil }, [:c, :d], :optional)
+        assert {} == Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, [], nil }, [:a, :b, :c, :d], :optional)
+        assert { :a, :b, :c, :d } == Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, 4 }, [:a, :b, :c, :d], :optional)
+        assert { :a, :b, :c, :d } == Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, [] }, [:a, :b, :c, :d], :optional)
+        assert { :a, :b, :c, :d } == Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, [:a, :b] }, [:c, :d], :optional)
+        assert { :a, :b, :c, :d } == Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, [], 0 }, [:a, :b, :c, :d], :optional)
+        assert { :c, :d, :a, :b } == Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, [:a, :b], 0 }, [:c, :d], :optional)
+        assert { :a, :b } == Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, [], [0, 2] }, [:a, :b, :c, :d], :optional)
+        assert { :c, :a, :d, :b } == Resx.Callback.call({ Resx.CallbackTest.Foo, :bar, [:a, :b], [0, 2] }, [:c, :d], :optional)
+        assert { :a, :b, :c, :d } == Resx.Callback.call(&Resx.CallbackTest.Foo.bar/4, [:a, :b, :c, :d], :optional)
     end
 end
