@@ -112,10 +112,16 @@ defmodule Resx.Resource do
         iex> Resx.Resource.hash(%Resx.Resource.Content{ type: ["text/plain"], data: "Hello" }, { :md5, { :crypto, :hash, [:md5] } })
         { :md5, <<139, 26, 153, 83, 196, 97, 18, 150, 168, 39, 171, 248, 196, 120, 4, 215>> }
 
+        iex> Resx.Resource.hash(%Resx.Resource.Content.Stream{ type: ["text/plain"], data: ["He", "l", "lo"] }, { :md5, { :crypto, :hash, [:md5] } })
+        { :md5, <<139, 26, 153, 83, 196, 97, 18, 150, 168, 39, 171, 248, 196, 120, 4, 215>> }
+
         iex> Resx.Resource.hash(%Resx.Resource.Content{ type: ["text/plain"], data: "Hello" }, { :hmac_md5_5, { :crypto, :hmac, [:md5, "secret", 5], 2 } })
         { :hmac_md5_5, <<243, 134, 128, 59, 99>> }
 
         iex> Resx.Resource.hash(%Resx.Resource.Content{ type: ["text/plain"], data: "Hello" }, :md5)
+        { :md5, <<139, 26, 153, 83, 196, 97, 18, 150, 168, 39, 171, 248, 196, 120, 4, 215>> }
+
+        iex> Resx.Resource.hash(%Resx.Resource.Content.Stream{ type: ["text/plain"], data: ["He", "l", "lo"] }, :md5)
         { :md5, <<139, 26, 153, 83, 196, 97, 18, 150, 168, 39, 171, 248, 196, 120, 4, 215>> }
 
         iex> Resx.Resource.hash(%Resx.Resource.Content{ type: ["text/plain"], data: "Hello" }, { :base64, &Base.encode64/1 })
@@ -134,7 +140,7 @@ defmodule Resx.Resource do
     def hash(%Resource{ reference: %{ integrity: %{ checksum: checksum = { algo, _ } } } }, { algo, _ }), do: checksum
     def hash(%Resource{ reference: %{ integrity: %{ checksum: checksum = { algo, _ } } } }, algo), do: checksum
     def hash(resource, { algo, fun }) do
-        data = content_reducer(resource) |> Callback.call([<<>>, &<>/2])
+        data = content_reducer(resource) |> Callback.call([<<>>, &(&2 <> &1)])
         { algo, Callback.call(fun, [data]) }
     end
     def hash(resource, algo) do
