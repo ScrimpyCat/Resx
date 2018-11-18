@@ -134,24 +134,14 @@ defmodule Resx.Resource do
     def hash(%Resource{ reference: %{ integrity: %{ checksum: checksum = { algo, _ } } } }, { algo, _ }), do: checksum
     def hash(%Resource{ reference: %{ integrity: %{ checksum: checksum = { algo, _ } } } }, algo), do: checksum
     def hash(resource, { algo, fun }) do
-        data = case to_binary(resource) do
-            reducer when is_function(reducer) -> Callback.call(reducer, [<<>>, &<>/2])
-            data -> data
-        end
+        data = content_reducer(resource) |> Callback.call([<<>>, &<>/2])
         { algo, Callback.call(fun, [data]) }
     end
     def hash(resource, algo) do
-        hash = case to_binary(resource) do
-            reducer when is_function(reducer) -> Callback.call(reducer, [:crypto.hash_init(algo), &:crypto.hash_update(&2, &1)]) |> :crypto.hash_final
-            data -> :crypto.hash(algo, data)
-        end
+        hash = content_reducer(resource) |> Callback.call([:crypto.hash_init(algo), &:crypto.hash_update(&2, &1)]) |> :crypto.hash_final
         { algo, hash }
     end
 
-    def to_binary(%Resource{ content: content }), do: to_binary(content)
-    def to_binary(content) do
-        Application.get_env(:resx, :content_reducer, fn content ->
-            &Enum.reduce(Content.Stream.new(content), &1, &2)
-        end).(content)
-    end
+    defp content_reducer(%Resource{ content: content }), do: content_reducer(content)
+    defp content_reducer(content), do: Content.reducer(content)
 end
