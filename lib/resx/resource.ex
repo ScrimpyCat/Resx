@@ -53,6 +53,9 @@ defmodule Resx.Resource do
     @spec open(t | Resx.ref, keyword) :: { :ok, Resource.t(Content.t) } | Resx.error(Resx.resource_error | Resx.reference_error)
     def open(resource, opts \\ []), do: adapter_call([resource, opts], :open)
 
+    @doc """
+      Stream a resource from a pre-existing resource or a resource reference.
+    """
     @spec stream(t | Resx.ref, keyword) :: { :ok, Resource.t(Content.Stream.t) } | Resx.error(Resx.resource_error | Resx.reference_error)
     def stream(resource, opts \\ []), do: adapter_call([resource, opts], :stream)
 
@@ -105,7 +108,7 @@ defmodule Resx.Resource do
       `streamable_hasher` then no decomposition will take place.
 
       The inputs to the initialiser function of a `streamable_hasher` are optional.
-      The rest are all required. 
+      The rest are all required.
 
       If the requested hash is the same as the checksum found in the resource, then
       that checksum will be returned without rehashing the resource content.
