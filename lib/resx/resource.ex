@@ -65,6 +65,9 @@ defmodule Resx.Resource do
     @spec exists?(t | Resx.ref) :: { :ok, boolean } | Resx.error(Resx.reference_error)
     def exists?(resource), do: adapter_call([resource], :exists?)
 
+    @doc """
+      Check if two resources or resource references point to the same resource.
+    """
     @spec alike?(t | Resx.ref, t | Resx.ref) :: boolean
     def alike?(resource_a, resource_b), do: adapter_call([resource_a, resource_b], :alike?)
 
