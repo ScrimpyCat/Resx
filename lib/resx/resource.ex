@@ -59,6 +59,9 @@ defmodule Resx.Resource do
     @spec stream(t | Resx.ref, keyword) :: { :ok, Resource.t(Content.Stream.t) } | Resx.error(Resx.resource_error | Resx.reference_error)
     def stream(resource, opts \\ []), do: adapter_call([resource, opts], :stream)
 
+    @doc """
+      Check whether a resource or resource reference exists.
+    """
     @spec exists?(t | Resx.ref) :: { :ok, boolean } | Resx.error(Resx.reference_error)
     def exists?(resource), do: adapter_call([resource], :exists?)
 
