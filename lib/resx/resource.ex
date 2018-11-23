@@ -71,6 +71,9 @@ defmodule Resx.Resource do
     @spec alike?(t | Resx.ref, t | Resx.ref) :: boolean
     def alike?(resource_a, resource_b), do: adapter_call([resource_a, resource_b], :alike?)
 
+    @doc """
+      Retrieve the URI for a resource or resource reference.
+    """
     @spec uri(t | Reference.t) :: { :ok, Resx.uri } | Resx.error(Resx.resource_error | Resx.reference_error)
     def uri(resource), do: adapter_call([resource], :resource_uri)
 
