@@ -25,7 +25,8 @@ defmodule Resx.MixProject do
             { :ex_doc, "~> 0.18", only: :dev, runtime: false },
             { :simple_markdown, "~> 0.5.4", only: :dev, runtime: false },
             { :ex_doc_simple_markdown, "~> 0.3", only: :dev, runtime: false },
-            { :simple_markdown_extension_svgbob, "~> 0.1", only: :dev, runtime: false }
+            { :simple_markdown_extension_svgbob, "~> 0.1", only: :dev, runtime: false },
+            { :local_cluster, "~> 1.0", only: :test }
         ]
     end
 end
