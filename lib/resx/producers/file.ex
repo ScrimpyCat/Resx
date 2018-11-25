@@ -169,6 +169,19 @@ defmodule Resx.Producers.File do
     alias Resx.Resource.Reference.Integrity
     alias Resx.Callback
 
+    defmodule ProtectedFileError do
+        defexception [:message, :node, :path]
+
+        @impl Exception
+        def exception({ node, path }) do
+            %ProtectedFileError{
+                message: "unable to access the protected file #{path} on #{node}",
+                node: node,
+                path: path
+            }
+        end
+    end
+
     defp to_path(%Reference{ repository: { node, path } }), do: check_access(node, path)
     defp to_path(%URI{ scheme: "file", host: host, path: path, userinfo: nil }) when host in [nil, "localhost"], do: check_access(node(), path)
     defp to_path(%URI{ scheme: "file", host: host, path: path, userinfo: user }), do: check_access(String.to_atom(user <> "@" <> host), path)
@@ -273,18 +286,40 @@ defmodule Resx.Producers.File do
         Application.get_env(:resx, __MODULE__)[key] || default
     end
 
-    @doc false
-    def call(node, module, fun, args) do
-        case node() do
-            ^node -> apply(module, fun, args)
-            _ ->
-                rpc = config(:rpc, { :rpc, :call, 4 })
-                Callback.call(rpc, [node, module, fun, args])
+    defp access?(opts) do
+        path = opts[:path]
+        if is_nil(path) or opts[:checked] do
+            :ok
+        else
+            node = node()
+            case check_access(node, path) do
+                { :ok, _ } -> :ok
+                error ->
+                    if opts[:exception] do
+                        raise ProtectedFileError, { node, path }
+                    else
+                        error
+                    end
+            end
         end
     end
 
-    defp call(node, fun, args) do
-        case call(node, __MODULE__, fun, args) do
+    @doc false
+    def call(node, module, fun, args, opts) do
+        case access?(opts) do
+            :ok ->
+                case node() do
+                    ^node -> apply(module, fun, args)
+                    _ ->
+                        rpc = config(:rpc, { :rpc, :call, 4 })
+                        Callback.call(rpc, [node, __MODULE__, :call, [node, module, fun, args, [{ :checked, false }|opts]]])
+                end
+            error -> error
+        end
+    end
+
+    defp module_call(node, fun, args, opts \\ []) do
+        case call(node, __MODULE__, fun, args, opts) do
             result = { type, _ } when type in [:ok, :error] -> result
             reason -> { :error, { :internal, reason } }
         end
@@ -359,7 +394,7 @@ defmodule Resx.Producers.File do
     @impl Resx.Producer
     def open(reference, _ \\ []) do
         case to_path(reference) do
-            { :ok, repo = { node, _ } } -> call(node, :file_open, [repo])
+            { :ok, repo = { node, path } } -> module_call(node, :file_open, [repo], path: path, checked: true)
             error -> error
         end
     end
@@ -379,7 +414,7 @@ defmodule Resx.Producers.File do
     @spec stream(Resx.ref, [modes: File.stream_mode, bytes: pos_integer]) :: { :ok, resource :: Resource.t(Content.Stream.t) } | Resx.error(Resx.resource_error | Resx.reference_error)
     def stream(reference, opts \\ []) do
         case to_path(reference) do
-            { :ok, repo = { node, _ } } -> call(node, :file_stream, [repo, opts])
+            { :ok, repo = { node, path } } -> module_call(node, :file_stream, [repo, opts], path: path, checked: true)
             error -> error
         end
     end
@@ -387,7 +422,7 @@ defmodule Resx.Producers.File do
     @impl Resx.Producer
     def exists?(reference) do
         case to_path(reference) do
-            { :ok, { node, path } } -> call(node, :file_exists?, [path])
+            { :ok, { node, path } } -> module_call(node, :file_exists?, [path], path: path, checked: true)
             error -> error
         end
     end
@@ -413,7 +448,7 @@ defmodule Resx.Producers.File do
     @impl Resx.Producer
     def resource_attributes(reference) do
         case to_path(reference) do
-            { :ok, { node, path } } -> call(node, :file_attributes, [path])
+            { :ok, { node, path } } -> module_call(node, :file_attributes, [path], path: path, checked: true)
             error -> error
         end
     end
