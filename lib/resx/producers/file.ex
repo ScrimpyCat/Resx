@@ -305,6 +305,9 @@ defmodule Resx.Producers.File do
     end
 
     @doc false
+    def call(module, fun, args, opts), do: call(node(), module, fun, args, opts)
+
+    @doc false
     def call(node, module, fun, args, opts) do
         case access?(opts) do
             :ok ->
@@ -312,7 +315,7 @@ defmodule Resx.Producers.File do
                     ^node -> apply(module, fun, args)
                     _ ->
                         rpc = config(:rpc, { :rpc, :call, 4 })
-                        Callback.call(rpc, [node, __MODULE__, :call, [node, module, fun, args, [{ :checked, false }|opts]]])
+                        Callback.call(rpc, [node, __MODULE__, :call, [module, fun, args, [{ :checked, false }|opts]]])
                 end
             error -> error
         end
