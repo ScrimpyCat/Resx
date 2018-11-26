@@ -44,8 +44,9 @@ defmodule Resx.Producers.File do
       and return a boolean. Valid function formats are any callback variant, see
       `Resx.Callback` for more information.
 
-      File access rules are applied on the node making the request. This means
-      that if node `foo@127.0.0.1` has the access rules:
+      File access rules are applied both on the node making the request and the
+      node processing the request. This means that if node `foo@127.0.0.1` has the
+      access rules:
 
         [
             "/one.txt",
@@ -56,6 +57,7 @@ defmodule Resx.Producers.File do
       And node `bar@127.0.0.1` has the access rules:
 
         [
+            "/two.txt",
             {:"bar@127.0.0.1", "/three.txt"}
         ]
 
@@ -65,7 +67,6 @@ defmodule Resx.Producers.File do
         \# Allowed
         Resx.Producers.File.open("file:///one.txt") \# => open file on node foo@127.0.0.1
         Resx.Producers.File.open("file://foo@127.0.0.1/one.txt") \# => open file on node foo@127.0.0.1
-        Resx.Producers.File.open("file://bar@127.0.0.1/one.txt") \# => open file on node bar@127.0.0.1
 
         Resx.Producers.File.open("file:///two.txt") \# => open file on node foo@127.0.0.1
         Resx.Producers.File.open("file://foo@127.0.0.1/two.txt") \# => open file on node foo@127.0.0.1
@@ -73,6 +74,8 @@ defmodule Resx.Producers.File do
         Resx.Producers.File.open("file://bar@127.0.0.1/three.txt") \# => open file on node bar@127.0.0.1
 
         \# Not Allowed
+        Resx.Producers.File.open("file://bar@127.0.0.1/one.txt")
+
         Resx.Producers.File.open("file://bar@127.0.0.1/two.txt")
 
         Resx.Producers.File.open("file:///three.txt")
@@ -83,6 +86,10 @@ defmodule Resx.Producers.File do
       these responses:
 
         \# Allowed
+        Resx.Producers.File.open("file:///two.txt") \# => open file on node bar@127.0.0.1
+        Resx.Producers.File.open("file://foo@127.0.0.1/two.txt") \# => open file on node foo@127.0.0.1
+        Resx.Producers.File.open("file://bar@127.0.0.1/two.txt") \# => open file on node bar@127.0.0.1
+
         Resx.Producers.File.open("file:///three.txt") \# => open file on node bar@127.0.0.1
         Resx.Producers.File.open("file://bar@127.0.0.1/three.txt") \# => open file on node bar@127.0.0.1
 
@@ -90,10 +97,6 @@ defmodule Resx.Producers.File do
         Resx.Producers.File.open("file:///one.txt")
         Resx.Producers.File.open("file://foo@127.0.0.1/one.txt")
         Resx.Producers.File.open("file://bar@127.0.0.1/one.txt")
-
-        Resx.Producers.File.open("file:///two.txt")
-        Resx.Producers.File.open("file://foo@127.0.0.1/two.txt")
-        Resx.Producers.File.open("file://bar@127.0.0.1/two.txt")
 
         Resx.Producers.File.open("file://foo@127.0.0.1/three.txt")
 
