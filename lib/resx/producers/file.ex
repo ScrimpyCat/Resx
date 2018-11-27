@@ -34,15 +34,17 @@ defmodule Resx.Producers.File do
                 "**/*.{ex,exs}",
                 ~r/.*?\/to\/another.txt/,
                 { MyFileAccessGranter, :can_access?, 1 },
-                { :"foo@127.0.0.1", "**/some-file.txt" }
+                { :"foo@127.0.0.1", "**/some-file.txt" },
+                { &(&1 in [:"foo@127.0.0.1", :"bar@127.0.0.1"]), "**/another-file.txt" }
             ]
 
       The `:access` field should contain either a list of strings, regexes, or
       callback functions, which will be applied to every node or it can be tagged
       with the node (`{ node, pattern }`) if the rule should only be applied to
       files found at that node. Callback functions expect a string (glob pattern)
-      and return a boolean. Valid function formats are any callback variant, see
-      `Resx.Callback` for more information.
+      and return a boolean. The node may also be a callback function that expects
+      a node and returns a boolean. Valid function formats are any callback variant,
+      see `Resx.Callback` for more information.
 
       File access rules are applied both on the node making the request and the
       node processing the request. This means that if node `foo@127.0.0.1` has the
