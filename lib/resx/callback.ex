@@ -77,6 +77,18 @@ defmodule Resx.Callback do
     """
     @type callback(arg1, arg2, result) :: (arg1, arg2 -> result) | mfa(2) | mfp
 
+    @doc """
+      Returns `true` if `term` is a `callback`; otherwise returns `false`.
+
+      Allowed in guard tests.
+    """
+    @spec is_callback(term) :: boolean
+    defguard is_callback(callback)
+        when is_tuple(callback)
+            and ((tuple_size(callback) == 3 and is_atom(elem(callback, 0)) and is_atom(elem(callback, 1)) and (is_integer(elem(callback, 2)) or is_list(elem(callback, 2))))
+            or (tuple_size(callback) == 4 and is_atom(elem(callback, 0)) and is_atom(elem(callback, 1)) and is_list(elem(callback, 2)) and (is_integer(elem(callback, 3)) or is_list(elem(callback, 3)) or is_nil(elem(callback, 3)))))
+        or is_function(callback)
+
     @doc false
     @spec call(callback, list, :required | :optional) :: any
     def call(fun, inputs \\ [], input_requirement \\ :required)
