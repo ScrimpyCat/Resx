@@ -165,6 +165,7 @@ defmodule Resx.Producers.File do
       file timestamp at the time of operating on the content stream.
     """
     use Resx.Producer
+    require Resx.Callback
 
     alias Resx.Resource
     alias Resx.Resource.Content
@@ -195,6 +196,7 @@ defmodule Resx.Producers.File do
     defp check_access(node, path) do
         if Enum.any?(config(:access, []), fn
             { ^node, access } -> include_path?(path, access)
+            { match_node, access } when Callback.is_callback(match_node) -> if(Callback.call(match_node, [node]), do: include_path?(path, access), else: false)
             { _, _ } -> false
             access -> include_path?(path, access)
         end) do
