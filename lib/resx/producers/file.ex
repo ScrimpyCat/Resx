@@ -102,6 +102,11 @@ defmodule Resx.Producers.File do
 
         Resx.Producers.File.open("file://foo@127.0.0.1/three.txt")
 
+      One common rule for nodes that might access files from other nodes, is a
+      generic catch-all. This rule can be written as: `{ &(&1 != node()), "**" }`
+      This will allow the calling node to attempt to access any file on the
+      recieving node.
+
       #### Glob Pattern
 
       Glob pattern rules follow the syntax of `Path.wildcard/2`, with the addition
