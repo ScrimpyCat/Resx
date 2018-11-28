@@ -165,7 +165,8 @@ defmodule Resx.Producers.FileTest do
         test "node paths" do
             Application.put_env(:resx, Resx.Producers.File, access: [
                 { :foo@bar, "/foo.txt" },
-                { node(), "/bar.txt" }
+                { node(), "/bar.txt" },
+                { &(&1 in [:a@a, :a@b]), "/baz.txt" }
             ])
 
             assert { :error, { :invalid_reference, _ } } = Resource.open("file:///foo.txt")
@@ -174,6 +175,10 @@ defmodule Resx.Producers.FileTest do
             assert { :error, { :unknown_resource, _ } } = Resource.open("file://localhost/bar.txt")
             assert { :error, { :unknown_resource, _ } } = Resource.open("file://#{node()}/bar.txt")
             assert { :error, { :invalid_reference, _ } } = Resource.open("file://foo@bar/bar.txt")
+            assert { :error, { :internal, { :badrpc, :nodedown } } } = Resource.open("file://a@a/baz.txt")
+            assert { :error, { :internal, { :badrpc, :nodedown } } } = Resource.open("file://a@b/baz.txt")
+            assert { :error, { :invalid_reference, _ } } = Resource.open("file://a@a/foo.txt")
+            assert { :error, { :invalid_reference, _ } } = Resource.open("file://a@a/foo.txt")
         end
 
         test "content" do
