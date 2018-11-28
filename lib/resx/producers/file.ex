@@ -44,7 +44,7 @@ defmodule Resx.Producers.File do
       files found at that node. Callback functions expect a string (glob pattern)
       and return a boolean. The node may also be a callback function that expects
       a node and returns a boolean. Valid function formats are any callback variant,
-      see `Resx.Callback` for more information.
+      see `Callback` for more information.
 
       File access rules are applied both on the node making the request and the
       node processing the request. This means that if node `foo@127.0.0.1` has the
@@ -127,7 +127,7 @@ defmodule Resx.Producers.File do
       callback function expects 4 arguments (node, module, fun, args) and should
       return the result of target function otherwise any non-ok/error tuple to be
       used as the internal error. Valid function formats are any callback variant,
-      see `Resx.Callback` for more information.
+      see `Callback` for more information.
 
         config :resx, Resx.Producers.File,
             rpc: { :gen_rpc, :call, 4 }
@@ -172,13 +172,12 @@ defmodule Resx.Producers.File do
       file timestamp at the time of operating on the content stream.
     """
     use Resx.Producer
-    require Resx.Callback
+    require Callback
 
     alias Resx.Resource
     alias Resx.Resource.Content
     alias Resx.Resource.Reference
     alias Resx.Resource.Reference.Integrity
-    alias Resx.Callback
 
     defmodule ProtectedFileError do
         defexception [:message, :node, :path]

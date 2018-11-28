@@ -7,7 +7,6 @@ defmodule Resx.Resource do
     alias Resx.Resource.Content
     alias Resx.Resource.Reference
     alias Resx.Resource.Reference.Integrity
-    alias Resx.Callback
 
     @type attribute_key :: atom | String.t
     @type content :: Content.t | Content.Stream.t
@@ -110,7 +109,7 @@ defmodule Resx.Resource do
       Hashing algorithms can take the form of either an atom that is a valid option
       to `:crypto.hash/2`, or a tuple of type `hasher` or `streamable_hasher` to
       provide a custom hashing function. Valid function formats are any callback
-      variant, see `Resx.Callback` for more information.
+      variant, see `Callback` for more information.
 
       __Note:__ If the resource content is streamable and a `hasher` is provided for
       the algo, then the entire content will be decomposed first. If the algo is a

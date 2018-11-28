@@ -1,4 +1,5 @@
 %{
+  "callback": {:hex, :callback, "0.1.0", "899002515070a96a6a6dff582584c3745b8bf08a5803e777e43cf95aa174efa8", [:mix], [], "hexpm"},
   "earmark": {:hex, :earmark, "1.2.6", "b6da42b3831458d3ecc57314dff3051b080b9b2be88c2e5aa41cd642a5b044ed", [:mix], [], "hexpm"},
   "ex_doc": {:hex, :ex_doc, "0.19.1", "519bb9c19526ca51d326c060cb1778d4a9056b190086a8c6c115828eaccea6cf", [:mix], [{:earmark, "~> 1.1", [hex: :earmark, repo: "hexpm", optional: false]}, {:makeup_elixir, "~> 0.7", [hex: :makeup_elixir, repo: "hexpm", optional: false]}], "hexpm"},
   "ex_doc_simple_markdown": {:hex, :ex_doc_simple_markdown, "0.3.2", "e2969b0522e46581ec8a2ec41e89dec1edf637ffe03967439de7427c7074540d", [:mix], [{:ex_doc, "~> 0.18", [hex: :ex_doc, repo: "hexpm", optional: false]}, {:simple_markdown, "~> 0.3", [hex: :simple_markdown, repo: "hexpm", optional: false]}], "hexpm"},

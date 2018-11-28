@@ -44,7 +44,7 @@ defmodule Resx.Resource.Content do
       By default this returns a reducer that assumes content is already in its
       binary form. But this can be overridden by setting the `:content_reducer`
       to a function of type `(t | Content.Stream.t -> reducer)`. Valid function
-      formats are any callback variant, see `Resx.Callback` for more information.
+      formats are any callback variant, see `Callback` for more information.
 
         config :resx,
             content_reducer: fn
