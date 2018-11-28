@@ -185,6 +185,75 @@ defmodule Resx.Producers.FileTest do
             Application.put_env(:resx, Resx.Producers.File, access: ["**"])
             assert { :ok, %Resource{ content: %Content{ type: ["application/octet-stream"], data: "defmodule Resx.Producers.FileTest do" <> _ } } } = Resource.open("file://#{__DIR__}/file_test.exs")
         end
+
+        test "distributed" do
+            { :ok, _ } = LocalCluster.start()
+
+            [node_a, node_b] = LocalCluster.start_nodes("test", 2)
+
+            :rpc.call(node_a, Application, :put_env, [:resx, Resx.Producers.File, [access: ["**/test/resx/producers/file_test.exs", { node(), "**/test/resx/producers/transform_test.exs" }]]])
+            :rpc.call(node_b, Application, :put_env, [:resx, Resx.Producers.File, [access: ["**/test/resx/producers/data_test.exs", { node(), "**" }, { node_a, "**" }]]])
+            Application.put_env(:resx, Resx.Producers.File, access: ["**"])
+
+            assert { :ok, _ } = Resx.Resource.open("file://#{__DIR__}/file_test.exs")
+            assert { :ok, _ } = Resx.Resource.open("file://#{__DIR__}/data_test.exs")
+            assert { :ok, _ } = Resx.Resource.open("file://#{__DIR__}/transform_test.exs")
+
+            assert { :ok, _ } = Resx.Resource.open("file://#{node_a}#{__DIR__}/file_test.exs")
+            assert { :error, { :invalid_reference, "protected file" } } == Resx.Resource.open("file://#{node_a}#{__DIR__}/data_test.exs")
+            assert { :error, { :invalid_reference, "protected file" } } == Resx.Resource.open("file://#{node_a}#{__DIR__}/transform_test.exs")
+
+            assert { :error, { :invalid_reference, "protected file" } } == Resx.Resource.open("file://#{node_b}#{__DIR__}/file_test.exs")
+            assert { :ok, _ } = Resx.Resource.open("file://#{node_b}#{__DIR__}/data_test.exs")
+            assert { :error, { :invalid_reference, "protected file" } } == Resx.Resource.open("file://#{node_b}#{__DIR__}/transform_test.exs")
+
+
+            assert { :ok, _ } = :rpc.call(node_a, Resx.Resource, :open, ["file://#{node()}#{__DIR__}/file_test.exs"])
+            assert { :error, { :invalid_reference, "protected file" } } == :rpc.call(node_a, Resx.Resource, :open, ["file://#{node()}#{__DIR__}/data_test.exs"])
+            assert { :ok, _ } = :rpc.call(node_a, Resx.Resource, :open, ["file://#{node()}#{__DIR__}/transform_test.exs"])
+
+            assert { :ok, _ } = :rpc.call(node_a, Resx.Resource, :open, ["file://#{__DIR__}/file_test.exs"])
+            assert { :error, { :invalid_reference, "protected file" } } == :rpc.call(node_a, Resx.Resource, :open, ["file://#{__DIR__}/data_test.exs"])
+            assert { :error, { :invalid_reference, "protected file" } } == :rpc.call(node_a, Resx.Resource, :open, ["file://#{__DIR__}/transform_test.exs"])
+
+            assert { :error, { :invalid_reference, "protected file" } } == :rpc.call(node_a, Resx.Resource, :open, ["file://#{node_b}#{__DIR__}/file_test.exs"])
+            assert { :error, { :invalid_reference, "protected file" } } == :rpc.call(node_a, Resx.Resource, :open, ["file://#{node_b}#{__DIR__}/data_test.exs"])
+            assert { :error, { :invalid_reference, "protected file" } } == :rpc.call(node_a, Resx.Resource, :open, ["file://#{node_b}#{__DIR__}/transform_test.exs"])
+
+
+            assert { :ok, _ } = :rpc.call(node_b, Resx.Resource, :open, ["file://#{node()}#{__DIR__}/file_test.exs"])
+            assert { :ok, _ } = :rpc.call(node_b, Resx.Resource, :open, ["file://#{node()}#{__DIR__}/data_test.exs"])
+            assert { :ok, _ } = :rpc.call(node_b, Resx.Resource, :open, ["file://#{node()}#{__DIR__}/transform_test.exs"])
+
+            assert { :ok, _ } = :rpc.call(node_b, Resx.Resource, :open, ["file://#{node_a}#{__DIR__}/file_test.exs"])
+            assert { :error, { :invalid_reference, "protected file" } } == :rpc.call(node_b, Resx.Resource, :open, ["file://#{node_a}#{__DIR__}/data_test.exs"])
+            assert { :error, { :invalid_reference, "protected file" } } == :rpc.call(node_b, Resx.Resource, :open, ["file://#{node_a}#{__DIR__}/transform_test.exs"])
+
+            assert { :error, { :invalid_reference, "protected file" } } == :rpc.call(node_b, Resx.Resource, :open, ["file://#{__DIR__}/file_test.exs"])
+            assert { :ok, _ } = :rpc.call(node_b, Resx.Resource, :open, ["file://#{__DIR__}/data_test.exs"])
+            assert { :error, { :invalid_reference, "protected file" } } == :rpc.call(node_b, Resx.Resource, :open, ["file://#{__DIR__}/transform_test.exs"])
+
+
+            { :ok, resource } = :rpc.call(node_b, Resx.Resource, :open, ["file://#{node_a}#{__DIR__}/file_test.exs"])
+            assert { :ok, _ } = Resx.Resource.open(resource)
+
+            :rpc.call(node_b, Application, :put_env, [:resx, Resx.Producers.File, [access: []]])
+            assert { :ok, _ } = Resx.Resource.open(resource)
+
+            Application.put_env(:resx, Resx.Producers.File, access: [])
+            assert { :error, { :invalid_reference, "protected file" } } == Resx.Resource.open(resource)
+
+            Application.put_env(:resx, Resx.Producers.File, access: ["**"])
+            :rpc.call(node_a, Application, :put_env, [:resx, Resx.Producers.File, [access: []]])
+            assert { :error, { :invalid_reference, "protected file" } } == Resx.Resource.open(resource)
+
+            :rpc.call(node_a, Application, :put_env, [:resx, Resx.Producers.File, [access: ["**/test/resx/producers/file_test.exs"]]])
+            assert { :ok, %{ content: content } } = Resx.Resource.stream(resource)
+            assert ["defmodule Resx.Producers.FileTest do\n"] == Enum.take(content, 1)
+
+            :rpc.call(node_a, Application, :put_env, [:resx, Resx.Producers.File, [access: [""]]])
+            catch_error Enum.take(content, 1)
+        end
     end
 
     test "uri/1" do
