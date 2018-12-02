@@ -5,7 +5,7 @@ defmodule Resx.Transformer do
     alias Resx.Resource.Reference
     alias Resx.Resource.Reference.Integrity
 
-    @callback transform(Resource.t) :: { :ok, resource :: Resource.t } | Resx.error
+    @callback transform(reference :: Resource.t) :: { :ok, resource :: Resource.t } | Resx.error
 
     defmodule TransformError do
         defexception [:message, :type, :reason, :transformer, :resource]

@@ -16,7 +16,7 @@ defmodule Resx.Producer do
       `resource` is the `Resx.Resource` struct. Otherwise return an appropriate
       error.
     """
-    @callback open(Resx.ref, options :: keyword) :: { :ok, resource :: Resource.t(Content.t) } | Resx.error(Resx.resource_error | Resx.reference_error)
+    @callback open(reference :: Resx.ref, options :: keyword) :: { :ok, resource :: Resource.t(Content.t) } | Resx.error(Resx.resource_error | Resx.reference_error)
 
     @doc """
       Optionally implement the behaviour for retrieving a resource stream.
@@ -31,7 +31,7 @@ defmodule Resx.Producer do
       `resource` is the `Resx.Resource` struct. Otherwise return an appropriate
       error.
     """
-    @callback stream(Resx.ref, options :: keyword) :: { :ok, resource :: Resource.t(Content.Stream.t) } | Resx.error(Resx.resource_error | Resx.reference_error)
+    @callback stream(reference :: Resx.ref, options :: keyword) :: { :ok, resource :: Resource.t(Content.Stream.t) } | Resx.error(Resx.resource_error | Resx.reference_error)
 
     @doc """
       Implement the behaviour for checking whether a resource exists for the given
@@ -43,7 +43,7 @@ defmodule Resx.Producer do
       If the resource exists return `{ :ok, true }`, if it does not exist return
       `{ :ok, false }`. Otherwise return an appropriate error.
     """
-    @callback exists?(Resx.ref) :: { :ok, exists :: boolean } | Resx.error(Resx.reference_error)
+    @callback exists?(reference :: Resx.ref) :: { :ok, exists :: boolean } | Resx.error(Resx.reference_error)
 
     @doc """
       Implement the behaviour for checking if two references point to the same
@@ -54,7 +54,7 @@ defmodule Resx.Producer do
 
       If the references are alike return `true`, otherwise return `false`.
     """
-    @callback alike?(Resx.ref, Resx.ref) :: boolean
+    @callback alike?(reference_a :: Resx.ref, reference_b :: Resx.ref) :: boolean
 
     @doc """
       Implement the behaviour to retrieve the URI for a resource reference.
@@ -65,7 +65,7 @@ defmodule Resx.Producer do
       If the URI can be created return `{ :ok, uri }`. Otherwise return an
       appropriate error.
     """
-    @callback resource_uri(Reference.t) :: { :ok, Resx.uri } | Resx.error(Resx.resource_error | Resx.reference_error)
+    @callback resource_uri(reference :: Reference.t) :: { :ok, Resx.uri } | Resx.error(Resx.resource_error | Resx.reference_error)
 
     @doc """
       Optionally implement the behaviour to retrieve the attribute for a resource.
@@ -77,7 +77,7 @@ defmodule Resx.Producer do
       `{ :ok, value }`, where `value` is the value of the attribute. Otherwise
       return an appropriate error.
     """
-    @callback resource_attribute(Resx.ref, field :: Resource.attribute_key) :: { :ok, attribute_value :: any } | Resx.error(Resx.resource_error | Resx.reference_error | :unknown_key)
+    @callback resource_attribute(reference :: Resx.ref, field :: Resource.attribute_key) :: { :ok, attribute_value :: any } | Resx.error(Resx.resource_error | Resx.reference_error | :unknown_key)
 
     @doc """
       Implement the behaviour to retrieve the attributes for a resource.
@@ -89,7 +89,7 @@ defmodule Resx.Producer do
       `{ :ok, %{ key => value } }`, where `key` is the field names of the attribute,
       and `value` is the value of the attribute. Otherwise return an appropriate error.
     """
-    @callback resource_attributes(Resx.ref) :: { :ok, attribute_values :: %{ optional(Resource.attribute_key) => any } } | Resx.error(Resx.resource_error | Resx.reference_error)
+    @callback resource_attributes(reference :: Resx.ref) :: { :ok, attribute_values :: %{ optional(Resource.attribute_key) => any } } | Resx.error(Resx.resource_error | Resx.reference_error)
 
     @doc """
       Optionally implement the behaviour to retrieve the attribute keys for a resource.
@@ -101,7 +101,7 @@ defmodule Resx.Producer do
       `{ :ok, keys }`, where `keys` are the field names of the different attributes.
       Otherwise return an appropriate error.
     """
-    @callback resource_attribute_keys(Resx.ref) :: { :ok, [field :: Resource.attribute_key] } | Resx.error(Resx.resource_error | Resx.reference_error)
+    @callback resource_attribute_keys(reference :: Resx.ref) :: { :ok, [field :: Resource.attribute_key] } | Resx.error(Resx.resource_error | Resx.reference_error)
 
     @doc false
     defmacro __using__(_opts) do
