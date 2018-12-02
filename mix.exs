@@ -4,11 +4,13 @@ defmodule Resx.MixProject do
     def project do
         [
             app: :resx,
-            version: "0.1.0",
+            description: "Resource management and processing",
+            version: "0.0.0",
             elixir: "~> 1.7",
             start_permanent: Mix.env() == :prod,
             deps: deps(),
             dialyzer: [plt_add_deps: :transitive],
+            package: package(),
             docs: [
                 markdown_processor_options: [extensions: [SimpleMarkdownExtensionSvgBob]]
             ]
@@ -29,6 +31,14 @@ defmodule Resx.MixProject do
             { :ex_doc_simple_markdown, "~> 0.3", only: :dev, runtime: false },
             { :simple_markdown_extension_svgbob, "~> 0.1", only: :dev, runtime: false },
             { :local_cluster, "~> 1.0", only: :test }
+        ]
+    end
+
+    defp package do
+        [
+            maintainers: ["Stefan Johnson"],
+            licenses: ["BSD 2-Clause"],
+            links: %{ "GitHub" => "https://github.com/ScrimpyCat/Resx" }
         ]
     end
 end
