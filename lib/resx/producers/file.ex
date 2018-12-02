@@ -192,21 +192,64 @@ defmodule Resx.Producers.File do
         end
     end
 
-    defp to_path(%Reference{ repository: { node, path } }), do: check_access(node, path)
-    defp to_path(%URI{ scheme: "file", host: host, path: path, userinfo: nil }) when host in [nil, "localhost"], do: check_access(node(), path)
-    defp to_path(%URI{ scheme: "file", host: host, path: path, userinfo: user }), do: check_access(String.to_atom(user <> "@" <> host), path)
+    defp to_path(%Reference{ repository: { node, path, source } }), do: check_access(node, path, source)
+    defp to_path(%URI{ scheme: "file", host: host, path: path, userinfo: nil, query: query }) when host in [nil, "localhost"], do: check_access(node(), path, source(query))
+    defp to_path(%URI{ scheme: "file", host: host, path: path, userinfo: user, query: query }), do: check_access(String.to_atom(user <> "@" <> host), path, source(query))
     defp to_path(%URI{ scheme: "file" }), do: { :error, "only supports local or remote node file references" }
     defp to_path(uri) when is_binary(uri), do: URI.decode(uri) |> URI.parse |> to_path
     defp to_path(_), do: { :error, { :invalid_reference, "not a file reference" } }
 
-    defp check_access(node, path) do
+    defp source(nil), do: nil
+    defp source(query) do
+        case URI.decode_query(query) do
+            %{ "source" => data } -> Base.decode64(data)
+            _ -> nil
+        end
+    end
+
+    defp store({ node, path, reference = %Reference{} }) do
+        case Resource.stream(reference) do
+            { :ok, resource } -> store({ node, path, resource })
+            error -> error
+        end
+    end
+    defp store(repo = { node, path, resource }) do
+        content = %Content.Stream{
+            type: extensions(path),
+            data: %__MODULE__.Stream{
+                stream: Content.Stream.new(resource.content) |> Stream.into(File.stream!(path)) |> Stream.transform({ :meta, repo }, fn
+                    data, { :meta, { _, path, resource } } ->
+                        File.write!(path <> ".meta", :erlang.term_to_binary(resource.meta))
+                        { [data], nil }
+                    data, _ -> { [data], nil }
+                end),
+                node: node,
+                path: path
+            }
+        }
+
+        { :ok, { node, path, %{ resource | content: content } } }
+    end
+
+    defp check_access(node, path, { :ok, source }) do
+        case Resource.stream(source) do
+            { :ok, resource } ->
+                case check_access(node, path, resource) do
+                    { :ok, repo } -> store(repo)
+                    error -> error
+                end
+            error -> error
+        end
+    end
+    defp check_access(_, _, :error), do: { :error, { :invalid_reference, "source is not base64" } }
+    defp check_access(node, path, source) do
         if Enum.any?(config(:access, []), fn
             { ^node, access } -> include_path?(path, access)
             { match_node, access } when Callback.is_callback(match_node) -> if(Callback.call(match_node, [node]), do: include_path?(path, access), else: false)
             { _, _ } -> false
             access -> include_path?(path, access)
         end) do
-            { :ok, { node, path } }
+            { :ok, { node, path, source } }
         else
             { :error, { :invalid_reference, "protected file" } }
         end
@@ -229,6 +272,18 @@ defmodule Resx.Producers.File do
         end
     end
 
+    defp meta_contents(path) do
+        case File.read(path) do
+            { :ok, meta } ->
+                try do
+                    { :ok, :erlang.binary_to_term(meta) }
+                rescue
+                    e -> { :error, { :internal, e } }
+                end
+            error -> error
+        end
+    end
+
     defp format_posix_error({ :error, :enoent }, path), do: { :error, { :unknown_resource, path } }
     defp format_posix_error({ :error, reason }, _), do: { :error, { :internal, reason } }
 
@@ -246,7 +301,7 @@ defmodule Resx.Producers.File do
             :ok
         else
             node = node()
-            case check_access(node, path) do
+            case check_access(node, path, nil) do
                 { :ok, _ } -> :ok
                 error ->
                     if opts[:exception] do
@@ -283,7 +338,7 @@ defmodule Resx.Producers.File do
     end
 
     @doc false
-    def file_open(repo = { _, path }) do
+    def file_open(repo = { _, path, nil }) do
         with { :read, { :ok, data } } <- { :read, File.read(path) },
              { :stat, timestamp } when is_integer(timestamp) <- { :stat, timestamp(path) } do
                 content = %Content{
@@ -306,15 +361,63 @@ defmodule Resx.Producers.File do
             { _, error } -> format_posix_error(error, path)
         end
     end
+    def file_open(repo = { node, path, source }) do
+        with { :read, { :ok, data } } <- { :read, File.read(path) },
+             { :meta, { :ok, meta } } <- { :meta, meta_contents(path <> ".meta") },
+             { :stat, timestamp } when is_integer(timestamp) <- { :stat, timestamp(path) } do
+                content = %Content{
+                    type: extensions(path),
+                    data: data
+                }
+                resource = %Resource{
+                    reference: %Reference{
+                        adapter: __MODULE__,
+                        repository: { node, path, source.reference },
+                        integrity: %Integrity{
+                            timestamp: timestamp
+                        }
+                    },
+                    content: content,
+                    meta: meta
+                }
+
+                { :ok,  resource }
+        else
+            _ ->
+                case source do
+                    %Reference{} -> store(repo)
+                    _ -> { :ok, repo }
+                end
+                |> case do
+                    { :ok, { node, path, resource } } ->
+                        try do
+                            Content.new(resource.content)
+                        rescue
+                            e -> { :error, { :internal, e } }
+                        else
+                            content ->
+                                reference = %Reference{
+                                    adapter: __MODULE__,
+                                    repository: { node, path, resource.reference },
+                                    integrity: %Integrity{
+                                        timestamp: timestamp(path)
+                                    }
+                                }
+                                { :ok, %{ resource | reference: reference, content: content } }
+                        end
+                    error -> error
+                end
+        end
+    end
 
     @doc false
-    def file_stream(repo = { node, path }, opts) do
+    def file_stream(repo = { node, path, nil }, opts) do
         stream = File.stream!(path, opts[:modes] || [], opts[:bytes] || :line)
         case timestamp(path) do
             timestamp when is_integer(timestamp) ->
                 content = %Content.Stream{
                     type: extensions(path),
-                    data: %__MODULE__.Stream{ stream: stream, node: node }
+                    data: %__MODULE__.Stream{ stream: stream, node: node, path: path }
                 }
                 resource = %Resource{
                     reference: %Reference{
@@ -351,7 +454,7 @@ defmodule Resx.Producers.File do
     @impl Resx.Producer
     def open(reference, _ \\ []) do
         case to_path(reference) do
-            { :ok, repo = { node, path } } -> module_call(node, :file_open, [repo], path: path, checked: true)
+            { :ok, repo = { node, path, _ } } -> module_call(node, :file_open, [repo], path: path, checked: true)
             error -> error
         end
     end
@@ -371,7 +474,7 @@ defmodule Resx.Producers.File do
     @spec stream(Resx.ref, [modes: File.stream_mode, bytes: pos_integer]) :: { :ok, resource :: Resource.t(Content.Stream.t) } | Resx.error(Resx.resource_error | Resx.reference_error)
     def stream(reference, opts \\ []) do
         case to_path(reference) do
-            { :ok, repo = { node, path } } -> module_call(node, :file_stream, [repo, opts], path: path, checked: true)
+            { :ok, repo = { node, path, _ } } -> module_call(node, :file_stream, [repo, opts], path: path, checked: true)
             error -> error
         end
     end
@@ -379,15 +482,15 @@ defmodule Resx.Producers.File do
     @impl Resx.Producer
     def exists?(reference) do
         case to_path(reference) do
-            { :ok, { node, path } } -> module_call(node, :file_exists?, [path], path: path, checked: true)
+            { :ok, { node, path, _ } } -> module_call(node, :file_exists?, [path], path: path, checked: true)
             error -> error
         end
     end
 
     @impl Resx.Producer
     def alike?(a, b) do
-        with { :a, { :ok, path } } <- { :a, to_path(a) },
-             { :b, { :ok, ^path } } <- { :b, to_path(b) } do
+        with { :a, { :ok, { node, path, _ } } } <- { :a, to_path(a) },
+             { :b, { :ok, { ^node, ^path, _ } } } <- { :b, to_path(b) } do
                 true
         else
             _ -> false
@@ -397,7 +500,7 @@ defmodule Resx.Producers.File do
     @impl Resx.Producer
     def resource_uri(reference) do
         case to_path(reference) do
-            { :ok, { node, path } } -> { :ok, URI.encode("file://" <> to_string(node) <> path) }
+            { :ok, { node, path, _ } } -> { :ok, URI.encode("file://" <> to_string(node) <> path) }
             error -> error
         end
     end
@@ -405,7 +508,7 @@ defmodule Resx.Producers.File do
     @impl Resx.Producer
     def resource_attributes(reference) do
         case to_path(reference) do
-            { :ok, { node, path } } -> module_call(node, :file_attributes, [path], path: path, checked: true)
+            { :ok, { node, path, _ } } -> module_call(node, :file_attributes, [path], path: path, checked: true)
             error -> error
         end
     end
