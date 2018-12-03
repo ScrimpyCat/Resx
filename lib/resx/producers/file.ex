@@ -434,6 +434,67 @@ defmodule Resx.Producers.File do
             error -> format_posix_error(error, path)
         end
     end
+    def file_stream(repo = { node, path, source }, opts) do
+        content = %Content.Stream{
+            type: extensions(path),
+            data: %__MODULE__.Stream{
+                stream: Stream.resource(fn ->
+                    if File.exists?(path) do
+                        File.stream!(path, opts[:modes] || [], opts[:bytes] || :line)
+                    else
+                        case source do
+                            %Reference{} -> store(repo)
+                            _ -> { :ok, repo }
+                        end
+                        |> case do
+                            { :ok, { _, _, resource } } -> Content.Stream.new(resource.content)
+                            error -> throw error
+                        end
+                    end
+                end, fn
+                    nil -> { :halt, nil }
+                    stream -> { stream, nil }
+                end, &(&1)),
+                node: node,
+                path: path
+            }
+        }
+
+        with { :meta, { :ok, meta } } <- { :meta, meta_contents(path <> ".meta") },
+             { :stat, timestamp } when is_integer(timestamp) <- { :stat, timestamp(path) } do
+                resource = %Resource{
+                    reference: %Reference{
+                        adapter: __MODULE__,
+                        repository: { node, path, source.reference },
+                        integrity: %Integrity{
+                            timestamp: timestamp
+                        }
+                    },
+                    content: content,
+                    meta: meta
+                }
+
+                { :ok,  resource }
+        else
+            _ ->
+                case source do
+                    %Reference{} -> store(repo)
+                    _ -> { :ok, repo }
+                end
+                |> case do
+                    { :ok, { node, path, resource } } ->
+                        reference = %Reference{
+                            adapter: __MODULE__,
+                            repository: { node, path, resource.reference },
+                            integrity: %Integrity{
+                                timestamp: DateTime.to_unix(DateTime.utc_now)
+                            }
+                        }
+                        { :ok, %{ resource | reference: reference, content: content } }
+                    error -> error
+                end
+        end
+    end
 
     @doc false
     def file_exists?(path), do: { :ok, File.exists?(path) }
