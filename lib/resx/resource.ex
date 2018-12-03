@@ -88,6 +88,9 @@ defmodule Resx.Resource do
     @spec attributes(t | Resx.ref) :: { :ok, %{ optional(attribute_key) => any } } | Resx.error(Resx.resource_error | Resx.reference_error)
     def attributes(resource), do: adapter_call([resource], :resource_attributes)
 
+    @doc """
+      Retrieve the attribute keys for a resource or resource reference.
+    """
     @spec attribute_keys(t | Resx.ref) :: { :ok, [attribute_key] } | Resx.error(Resx.resource_error | Resx.reference_error)
     def attribute_keys(resource), do: adapter_call([resource], :resource_attribute_keys)
 
