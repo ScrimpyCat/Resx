@@ -497,7 +497,8 @@ defmodule Resx.Producers.File do
     end
 
     @doc false
-    def file_exists?(path), do: { :ok, File.exists?(path) }
+    def file_exists?({ _, path, nil }), do: { :ok, File.exists?(path) }
+    def file_exists?({ _, path, source }), do: if(File.exists?(path), do: { :ok, true }, else: Resource.exists?(source))
 
     @doc false
     def file_attributes(path) do
@@ -543,7 +544,7 @@ defmodule Resx.Producers.File do
     @impl Resx.Producer
     def exists?(reference) do
         case to_path(reference) do
-            { :ok, { node, path, _ } } -> module_call(node, :file_exists?, [path], path: path, checked: true)
+            { :ok, repo = { node, path, _ } } -> module_call(node, :file_exists?, [repo], path: path, checked: true)
             error -> error
         end
     end
