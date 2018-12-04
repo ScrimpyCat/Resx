@@ -26,6 +26,24 @@ defmodule Resx.Resource do
         meta: keyword
     }
 
+    defmodule OpenError do
+        defexception [:type, :reason, :reference]
+
+        @impl Exception
+        def exception({ reference, { type, reason } }) do
+            %OpenError{
+                type: type,
+                reason: reason,
+                reference: reference
+            }
+        end
+
+        @impl Exception
+        def message(%{ type: :internal, reason: reason }), do: "internal error: #{inspect reason}"
+        def message(%{ type: :invalid_reference, reason: reason }), do: "invalid reference: #{inspect reason}"
+        def message(%{ type: :unknown_resource, reason: reason }), do: "unknown resource: #{inspect reason}"
+    end
+
     defp ref(%Resource{ reference: reference }), do: reference
     defp ref(reference), do: reference
 
@@ -53,10 +71,40 @@ defmodule Resx.Resource do
     def open(resource, opts \\ []), do: adapter_call([resource, opts], :open)
 
     @doc """
+      Open a resource from a pre-existing resource or a resource reference.
+
+      Raises a `Resx.Resource.OpenError` if the resource could not be opened.
+
+      For more details see `Resx.Resource.open/2`.
+    """
+    @spec open!(t | Resx.ref, keyword) :: Resource.t(Content.t) | no_return
+    def open!(resource, opts \\ []) do
+        case open(resource, opts) do
+            { :ok, resource } -> resource
+            { :error, error } -> raise OpenError, { resource, error }
+        end
+    end
+
+    @doc """
       Stream a resource from a pre-existing resource or a resource reference.
     """
     @spec stream(t | Resx.ref, keyword) :: { :ok, Resource.t(Content.Stream.t) } | Resx.error(Resx.resource_error | Resx.reference_error)
     def stream(resource, opts \\ []), do: adapter_call([resource, opts], :stream)
+
+    @doc """
+      Stream a resource from a pre-existing resource or a resource reference.
+
+      Raises a `Resx.Resource.OpenError` if the resource could not be streamed.
+
+      For more details see `Resx.Resource.stream/2`.
+    """
+    @spec stream!(t | Resx.ref, keyword) :: Resource.t(Content.Stream.t) | no_return
+    def stream!(resource, opts \\ []) do
+        case stream(resource, opts) do
+            { :ok, resource } -> resource
+            { :error, error } -> raise OpenError, { resource, error }
+        end
+    end
 
     @doc """
       Check whether a resource or resource reference exists.
@@ -93,6 +141,36 @@ defmodule Resx.Resource do
     """
     @spec attribute_keys(t | Resx.ref) :: { :ok, [attribute_key] } | Resx.error(Resx.resource_error | Resx.reference_error)
     def attribute_keys(resource), do: adapter_call([resource], :resource_attribute_keys)
+
+    @doc """
+      Transform the resource.
+
+      If a resource reference is given, a stream will be opened to that resource.
+
+      For more details see `Resx.Transformer.apply/2`.
+    """
+    @spec transform(t | Resx.ref, module) :: { :ok, t } | Resx.error(Resx.resource_error | Resx.reference_error)
+    def transform(resource = %Resource{}, transformer), do: Resx.Transformer.apply(resource, transformer)
+    def transform(reference, transformer) do
+        case stream(reference) do
+            { :ok, resource } -> Resx.Transformer.apply(resource, transformer)
+            error -> error
+        end
+    end
+
+    @doc """
+      Transform the resource.
+
+      If a resource reference is given, a stream will be opened to that resource.
+
+      Raises a `Resx.Transformer.TransformError` if the transformation cannot be applied,
+      or a `Resx.Resource.OpenError` if the resource could not be opened.
+
+      For more details see `Resx.Transformer.apply!/2`.
+    """
+    @spec transform!(t | Resx.ref, module) :: t | no_return
+    def transform!(resource = %Resource{}, transformer), do: Resx.Transformer.apply!(resource, transformer)
+    def transform!(reference, transformer), do: stream!(reference) |> Resx.Transformer.apply!(transformer)
 
     @doc """
       Compute a hash of the resource content using the default hashing function.
