@@ -562,7 +562,12 @@ defmodule Resx.Producers.File do
     @impl Resx.Producer
     def resource_uri(reference) do
         case to_path(reference) do
-            { :ok, { node, path, _ } } -> { :ok, URI.encode("file://" <> to_string(node) <> path) }
+            { :ok, { node, path, nil } } -> { :ok, URI.encode("file://" <> to_string(node) <> path) }
+            { :ok, { node, path, source } } ->
+                case Resource.uri(source) do
+                    { :ok, uri } -> { :ok, URI.encode("file://" <> to_string(node) <> path <> "?source=#{Base.encode64(uri)}") }
+                    error -> error
+                end
             error -> error
         end
     end
