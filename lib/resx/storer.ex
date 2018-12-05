@@ -21,8 +21,8 @@ defmodule Resx.Storer do
       The `options` keyword allows for your implementation to expose some configurable
       settings.
 
-      If the transformation was successful return `{ :ok, resource }`, where `resource`
-      is the newly transformed resource. Otherwise return an appropriate error.
+      If the store was successful return `{ :ok, resource }`, where `resource` is the
+      stored resource. Otherwise return an appropriate error.
     """
     @callback store(resource :: Resource.t, options :: keyword) :: { :ok, resource :: Resource.t } | Resx.error
 
