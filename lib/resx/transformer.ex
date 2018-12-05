@@ -5,7 +5,20 @@ defmodule Resx.Transformer do
     alias Resx.Resource.Reference
     alias Resx.Resource.Reference.Integrity
 
+    @doc """
+      Implement the behaviour to transform a resource.
+
+      If the transformation was successful return `{ :ok, resource }`, where `resource`
+      is the newly transformed resource. Otherwise return an appropriate error.
+    """
     @callback transform(reference :: Resource.t) :: { :ok, resource :: Resource.t } | Resx.error
+
+    @doc false
+    defmacro __using__(_opts) do
+        quote do
+            @behaviour Resx.Transformer
+        end
+    end
 
     defmodule TransformError do
         defexception [:message, :type, :reason, :transformer, :resource]
