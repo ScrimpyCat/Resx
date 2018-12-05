@@ -18,7 +18,7 @@ defmodule Resx.Transformer do
       If the transformation was successful return `{ :ok, resource }`, where `resource`
       is the newly transformed resource. Otherwise return an appropriate error.
     """
-    @callback transform(reference :: Resource.t) :: { :ok, resource :: Resource.t } | Resx.error
+    @callback transform(resource :: Resource.t) :: { :ok, resource :: Resource.t } | Resx.error
 
     @doc false
     defmacro __using__(_opts) do
