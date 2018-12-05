@@ -173,6 +173,36 @@ defmodule Resx.Resource do
     def transform!(reference, transformer), do: stream!(reference) |> Resx.Transformer.apply!(transformer)
 
     @doc """
+      Store the resource.
+
+      If a resource reference is given, a stream will be opened to that resource.
+
+      For more details see `Resx.Storer.save/2`.
+    """
+    @spec store(t | Resx.ref, module, keyword) :: { :ok, t } | Resx.error(Resx.resource_error | Resx.reference_error)
+    def store(resource = %Resource{}, storer, opts), do: Resx.Storer.save(resource, storer, opts)
+    def store(reference, storer, opts) do
+        case stream(reference) do
+            { :ok, resource } -> Resx.Storer.save(resource, storer, opts)
+            error -> error
+        end
+    end
+
+    @doc """
+      Store the resource.
+
+      If a resource reference is given, a stream will be opened to that resource.
+
+      Raises a `Resx.Storer.StoreError` if the resource cannot be saved,
+      or a `Resx.Resource.OpenError` if the resource could not be opened.
+
+      For more details see `Resx.Storer.save!/2`.
+    """
+    @spec store!(t | Resx.ref, module, keyword) :: t | no_return
+    def store!(resource = %Resource{}, storer, opts), do: Resx.Storer.save!(resource, storer, opts)
+    def store!(reference, storer, opts), do: stream!(reference) |> Resx.Storer.save!(storer, opts)
+
+    @doc """
       Compute a hash of the resource content using the default hashing function.
 
       The default hashing function can be configured by giving a `:hash` option in
