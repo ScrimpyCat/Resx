@@ -1,4 +1,11 @@
 defmodule Resx.Transformer do
+    @moduledoc """
+      A transformer is a referencable interface for performing reproducible
+      modifications on resources.
+
+      A module that implements the transformer behaviour becomes usable by the
+      `Resx.Producers.Transform` producer.
+    """
     import Kernel, except: [apply: 2]
 
     alias Resx.Resource
