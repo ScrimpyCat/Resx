@@ -14,8 +14,6 @@ defmodule Resx.Storer do
       this is both a producer and a store.
     """
     alias Resx.Resource
-    alias Resx.Resource.Reference
-    alias Resx.Resource.Reference.Integrity
 
     @doc """
       Implement the behaviour to store a resource.
@@ -26,7 +24,7 @@ defmodule Resx.Storer do
       If the transformation was successful return `{ :ok, resource }`, where `resource`
       is the newly transformed resource. Otherwise return an appropriate error.
     """
-    @callback store(Resource.t, options :: keyword) :: { :ok, resource :: Resource.t } | Resx.error
+    @callback store(resource :: Resource.t, options :: keyword) :: { :ok, resource :: Resource.t } | Resx.error
 
     @doc false
     defmacro __using__(_opts) do
@@ -36,7 +34,7 @@ defmodule Resx.Storer do
     end
 
     defmodule StoreError do
-        defexception [:message, :type, :reason, :storer, :resource]
+        defexception [:message, :type, :reason, :storer, :resource, :options]
 
         @impl Exception
         def exception({ resource, storer, options, { type, reason } }) do
