@@ -1,6 +1,6 @@
 defmodule Resx.Producer do
     @moduledoc """
-      A producer is an interface for working with a referencable resource.
+      A producer is an interface for working with a referenceable resource.
 
       This could be anything from a type of storage or networking protocol, to
       generation of content (e.g. you might expose some procedural generation
