@@ -180,6 +180,7 @@ defmodule Resx.Resource do
       For more details see `Resx.Storer.save/2`.
     """
     @spec store(t | Resx.ref, module, keyword) :: { :ok, t } | Resx.error(Resx.resource_error | Resx.reference_error)
+    def store(resource, storer, opts \\ [])
     def store(resource = %Resource{}, storer, opts), do: Resx.Storer.save(resource, storer, opts)
     def store(reference, storer, opts) do
         case stream(reference) do
@@ -199,6 +200,7 @@ defmodule Resx.Resource do
       For more details see `Resx.Storer.save!/2`.
     """
     @spec store!(t | Resx.ref, module, keyword) :: t | no_return
+    def store!(resource, storer, opts \\ [])
     def store!(resource = %Resource{}, storer, opts), do: Resx.Storer.save!(resource, storer, opts)
     def store!(reference, storer, opts), do: stream!(reference) |> Resx.Storer.save!(storer, opts)
 
