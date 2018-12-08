@@ -56,6 +56,9 @@ defmodule Resx.Producers.TransformTest do
 
             { :ok, resource } = Transformer.apply(resource, Replacer, pattern: "foo", replacement: "abc")
             assert "abcabctestbar" == resource.content.data
+            { :ok, uri } = Resource.uri(resource)
+            { :ok, res } = Resource.open(uri)
+            assert res.content == resource.content
         end
 
         test "stream" do
@@ -76,6 +79,9 @@ defmodule Resx.Producers.TransformTest do
 
             { :ok, resource } = Transformer.apply(resource, Replacer, pattern: "foo", replacement: "abc")
             assert "abcabcone two threebar" == resource.content.data
+            { :ok, uri } = Resource.uri(resource)
+            { :ok, res } = Resource.open(uri)
+            assert res.content == Content.new(resource.content)
         end
     end
 
@@ -88,6 +94,10 @@ defmodule Resx.Producers.TransformTest do
 
             { :ok, original_uri } = Resource.uri(original)
             assert { :ok, "resx-transform:Resx.Producers.TransformTest.Suffixer,Resx.Producers.TransformTest.Prefixer,Resx.Producers.TransformTest.Prefixer,#{Base.encode64(original_uri)}" } == Resource.uri(resource)
+
+            transform_options = [pattern: "foo", replacement: "abc"]
+            { :ok, resource } = Transformer.apply(resource, Replacer, transform_options)
+            assert { :ok, "resx-transform:Resx.Producers.TransformTest.Replacer:#{Base.encode64(:erlang.term_to_binary(transform_options))},Resx.Producers.TransformTest.Suffixer,Resx.Producers.TransformTest.Prefixer,Resx.Producers.TransformTest.Prefixer,#{Base.encode64(original_uri)}" } == Resource.uri(resource)
         end
 
         test "stream" do
@@ -99,6 +109,10 @@ defmodule Resx.Producers.TransformTest do
 
             { :ok, original_uri } = Resource.uri(original)
             assert { :ok, "resx-transform:Resx.Producers.TransformTest.Suffixer,Resx.Producers.TransformTest.Prefixer,Resx.Producers.TransformTest.Prefixer,#{Base.encode64(original_uri)}" } == Resource.uri(resource)
+
+            transform_options = [pattern: "foo", replacement: "abc"]
+            { :ok, resource } = Transformer.apply(resource, Replacer, transform_options)
+            assert { :ok, "resx-transform:Resx.Producers.TransformTest.Replacer:#{Base.encode64(:erlang.term_to_binary(transform_options))},Resx.Producers.TransformTest.Suffixer,Resx.Producers.TransformTest.Prefixer,Resx.Producers.TransformTest.Prefixer,#{Base.encode64(original_uri)}" } == Resource.uri(resource)
         end
     end
 
