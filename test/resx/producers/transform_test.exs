@@ -9,10 +9,10 @@ defmodule Resx.Producers.TransformTest do
         @behaviour Transformer
 
         @impl Transformer
-        def transform(resource = %Resource{ content: content = %Content{} }) do
+        def transform(resource = %Resource{ content: content = %Content{} }, _) do
             { :ok, %{ resource | content: %{ content | data: "foo" <> content.data } } }
         end
-        def transform(resource = %Resource{ content: content }) do
+        def transform(resource = %Resource{ content: content }, _) do
             { :ok, %{ resource | content: %{ content | data: Stream.concat(["foo"], content) } } }
         end
     end
@@ -21,11 +21,20 @@ defmodule Resx.Producers.TransformTest do
         @behaviour Transformer
 
         @impl Transformer
-        def transform(resource = %Resource{ content: content = %Content{} }) do
+        def transform(resource = %Resource{ content: content = %Content{} }, _) do
             { :ok, %{ resource | content: %{ content | data: content.data <> "bar" } } }
         end
-        def transform(resource = %Resource{ content: content }) do
+        def transform(resource = %Resource{ content: content }, _) do
             { :ok, %{ resource | content: %{ content | data: Stream.concat(content, ["bar"]) } } }
+        end
+    end
+
+    defmodule Replacer do
+        @behaviour Transformer
+
+        @impl Transformer
+        def transform(resource = %Resource{ content: content }, options) do
+            { :ok, %{ resource | content: %Content{ type: content.type, data: Content.data(content) |> String.replace(options[:pattern] || "", options[:replacement] || "") } } }
         end
     end
 
@@ -44,6 +53,9 @@ defmodule Resx.Producers.TransformTest do
 
             assert { :ok, ^resource } = Resource.open(resource) # TODO: equal? function
             assert res.content == resource.content
+
+            { :ok, resource } = Transformer.apply(resource, Replacer, pattern: "foo", replacement: "abc")
+            assert "abcabctestbar" == resource.content.data
         end
 
         test "stream" do
@@ -61,6 +73,9 @@ defmodule Resx.Producers.TransformTest do
 
             assert { :ok, %{ resource | content: Content.new(resource.content) } } == Resource.open(resource) # TODO: equal? function
             assert res.content == Content.new(resource.content)
+
+            { :ok, resource } = Transformer.apply(resource, Replacer, pattern: "foo", replacement: "abc")
+            assert "abcabcone two threebar" == resource.content.data
         end
     end
 
