@@ -20,10 +20,10 @@ defmodule Resx.Producers.Transform do
     defp to_ref(_), do: { :error, { :invalid_reference, "not a transformation reference" } }
 
     defp build_ref([], base), do: base
-    defp build_ref([module|modules], base) do
+    defp build_ref([{ module, options }|modules], base) do
         build_ref(modules, %Reference{
             adapter: __MODULE__,
-            repository: { module, base },
+            repository: { module, options, base },
             integrity: nil
         })
     end
@@ -33,21 +33,36 @@ defmodule Resx.Producers.Transform do
     defp get_stages([_], []), do: "missing transformation"
     defp get_stages([data], modules), do: { modules, Base.decode64(data) }
     defp get_stages([module|path], modules) do
+        { module, options } = case String.split(module, ":") do
+            [module] -> { module, [] }
+            [module, options] ->
+                options = case Base.decode64(options) do
+                    { :ok, options } ->
+                        try do
+                            :erlang.binary_to_term(options)
+                        rescue
+                            _ -> "invalid transformation option"
+                        end
+                    _ -> "transformation option is not base64"
+                end
+                { module, options }
+        end
+
         try do
             Module.safe_concat([module])
         rescue
             _ -> "transformation (#{module}) does not exist"
         else
-            module -> get_stages(path, [module|modules])
+            module -> get_stages(path, [{ module, options }|modules])
         end
     end
 
     @impl Resx.Producer
     def open(reference, opts \\ []) do
         case to_ref(reference) do
-            { :ok, %Reference{ repository: { transformer, reference } } } ->
+            { :ok, %Reference{ repository: { transformer, options, reference } } } ->
                 case Resource.open(reference, opts) do
-                    { :ok, resource } -> Resx.Transformer.apply(resource, transformer)
+                    { :ok, resource } -> Resx.Transformer.apply(resource, transformer, options)
                     error -> error
                 end
             error -> error
@@ -57,31 +72,34 @@ defmodule Resx.Producers.Transform do
     @impl Resx.Producer
     def exists?(reference) do
         case to_ref(reference) do
-            { :ok, %Reference{ repository: { _, reference } } } -> Resource.exists?(reference)
+            { :ok, %Reference{ repository: { _, _, reference } } } -> Resource.exists?(reference)
             error -> error
         end
     end
 
     @impl Resx.Producer
     def alike?(a, b) do
-        with { :a, { :ok, %Reference{ repository: { transformer, reference_a } } } } <- { :a, to_ref(a) },
-             { :b, { :ok, %Reference{ repository: { ^transformer, reference_b } } } } <- { :b, to_ref(b) } do
+        with { :a, { :ok, %Reference{ repository: { transformer, options, reference_a } } } } <- { :a, to_ref(a) },
+             { :b, { :ok, %Reference{ repository: { ^transformer, ^options, reference_b } } } } <- { :b, to_ref(b) } do
                 Resource.alike?(reference_a, reference_b)
         else
             _ -> false
         end
     end
 
+    defp format_options([]), do: []
+    defp format_options(options), do: [":", :erlang.term_to_binary(options) |> Base.encode64]
+
     defp to_uri(reference, transformations \\ [])
-    defp to_uri(%Reference{ repository: { transformer, reference = %Reference{ adapter: __MODULE__ } } }, transformations), do: to_uri(reference, [transformations, [inspect(transformer), ","]])
-    defp to_uri(%Reference{ repository: { transformer, reference } }, transformations) do
+    defp to_uri(%Reference{ repository: { transformer, options, reference = %Reference{ adapter: __MODULE__ } } }, transformations), do: to_uri(reference, [transformations, [[inspect(transformer)|format_options(options)], ","]])
+    defp to_uri(%Reference{ repository: { transformer, options, reference } }, transformations) do
         case Resource.uri(reference) do
             { :ok, uri } ->
                 uri =
                     [
                         "resx-transform:",
                         transformations,
-                        inspect(transformer),
+                        [inspect(transformer)|format_options(options)],
                         ",",
                         Base.encode64(uri)
                     ]
@@ -104,7 +122,7 @@ defmodule Resx.Producers.Transform do
     @impl Resx.Producer
     def resource_attribute(reference, field) do
         case to_ref(reference) do
-            { :ok, %Reference{ repository: { _, reference } } } -> Resource.attribute(reference, field)
+            { :ok, %Reference{ repository: { _, _, reference } } } -> Resource.attribute(reference, field)
             error -> error
         end
     end
@@ -112,7 +130,7 @@ defmodule Resx.Producers.Transform do
     @impl Resx.Producer
     def resource_attributes(reference) do
         case to_ref(reference) do
-            { :ok, %Reference{ repository: { _, reference } } } -> Resource.attributes(reference)
+            { :ok, %Reference{ repository: { _, _, reference } } } -> Resource.attributes(reference)
             error -> error
         end
     end
@@ -120,7 +138,7 @@ defmodule Resx.Producers.Transform do
     @impl Resx.Producer
     def resource_attribute_keys(reference) do
         case to_ref(reference) do
-            { :ok, %Reference{ repository: { _, reference } } } -> Resource.attribute_keys(reference)
+            { :ok, %Reference{ repository: { _, _, reference } } } -> Resource.attribute_keys(reference)
             error -> error
         end
     end

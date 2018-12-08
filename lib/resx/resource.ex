@@ -149,11 +149,12 @@ defmodule Resx.Resource do
 
       For more details see `Resx.Transformer.apply/2`.
     """
-    @spec transform(t | Resx.ref, module) :: { :ok, t } | Resx.error(Resx.resource_error | Resx.reference_error)
-    def transform(resource = %Resource{}, transformer), do: Resx.Transformer.apply(resource, transformer)
-    def transform(reference, transformer) do
+    @spec transform(t | Resx.ref, module, keyword) :: { :ok, t } | Resx.error(Resx.resource_error | Resx.reference_error)
+    def transform(resource, transformer, opts \\ [])
+    def transform(resource = %Resource{}, transformer, opts), do: Resx.Transformer.apply(resource, transformer, opts)
+    def transform(reference, transformer, opts) do
         case stream(reference) do
-            { :ok, resource } -> Resx.Transformer.apply(resource, transformer)
+            { :ok, resource } -> Resx.Transformer.apply(resource, transformer, opts)
             error -> error
         end
     end
@@ -168,9 +169,10 @@ defmodule Resx.Resource do
 
       For more details see `Resx.Transformer.apply!/2`.
     """
-    @spec transform!(t | Resx.ref, module) :: t | no_return
-    def transform!(resource = %Resource{}, transformer), do: Resx.Transformer.apply!(resource, transformer)
-    def transform!(reference, transformer), do: stream!(reference) |> Resx.Transformer.apply!(transformer)
+    @spec transform!(t | Resx.ref, module, keyword) :: t | no_return
+    def transform!(resource, transformer, opts \\ [])
+    def transform!(resource = %Resource{}, transformer, opts), do: Resx.Transformer.apply!(resource, transformer, opts)
+    def transform!(reference, transformer, opts), do: stream!(reference) |> Resx.Transformer.apply!(transformer, opts)
 
     @doc """
       Store the resource.
