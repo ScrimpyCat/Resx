@@ -172,6 +172,7 @@ defmodule Resx.Producers.File do
       file timestamp at the time of operating on the content stream.
     """
     use Resx.Producer
+    use Resx.Storer
     require Callback
 
     alias Resx.Resource
@@ -333,6 +334,7 @@ defmodule Resx.Producers.File do
 
     defp module_call(node, fun, args, opts \\ []) do
         case call(node, __MODULE__, fun, args, opts) do
+            :ok -> :ok
             result = { type, _ } when type in [:ok, :error] -> result
             reason -> { :error, { :internal, reason } }
         end
@@ -514,6 +516,9 @@ defmodule Resx.Producers.File do
         end
     end
 
+    @doc false
+    def file_store(), do: :ok
+
     @impl Resx.Producer
     def open(reference, _ \\ []) do
         case to_path(reference) do
@@ -578,6 +583,56 @@ defmodule Resx.Producers.File do
         case to_path(reference) do
             { :ok, { node, path, _ } } -> module_call(node, :file_attributes, [path], path: path, checked: true)
             error -> error
+        end
+    end
+
+    @impl Resx.Storer
+    def store(resource, options) do
+        case Keyword.fetch(options, :path) do
+            { :ok, path } ->
+                [user, host] = case options[:node] do
+                    nil -> [nil, nil]
+                    node -> to_string(node) |> String.split("@")
+                end
+
+                path = Path.expand(path)
+                case to_path(%URI{ scheme: "file", host: host, path: path, userinfo: user }) do
+                    { :ok, { node, path, _ } } ->
+                        case module_call(node, :file_store, [], path: path, checked: true) do
+                            :ok ->
+                                content = %Content.Stream{
+                                    type: extensions(path),
+                                    data: %__MODULE__.Stream{
+                                        stream: Stream.resource(fn ->
+                                            if File.exists?(path) do
+                                                File.stream!(path, options[:modes] || [], options[:bytes] || :line)
+                                            else
+                                                case store({ node, path, resource }) do
+                                                    { :ok, { _, _, resource } } -> Content.Stream.new(resource.content)
+                                                    error -> throw error
+                                                end
+                                            end
+                                        end, fn
+                                            nil -> { :halt, nil }
+                                            stream -> { stream, nil }
+                                        end, &(&1)),
+                                        node: node,
+                                        path: path
+                                    }
+                                }
+                                reference = %Reference{
+                                    adapter: __MODULE__,
+                                    repository: { node, path, resource.reference },
+                                    integrity: %Integrity{
+                                        timestamp: DateTime.to_unix(DateTime.utc_now)
+                                    }
+                                }
+                                { :ok, %{ resource | reference: reference, content: content } }
+                            error -> error
+                        end
+                    error -> error
+                end
+            _ -> { :error, { :internal, "a store :path must be specified" } }
         end
     end
 end
