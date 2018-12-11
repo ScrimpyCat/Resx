@@ -297,12 +297,11 @@ defmodule Resx.Producers.File do
         Application.get_env(:resx, __MODULE__)[key] || default
     end
 
-    defp access?(opts) do
+    defp access?(node, opts) do
         path = opts[:path]
         if is_nil(path) or opts[:checked] do
             :ok
         else
-            node = node()
             case check_access(node, path, nil) do
                 { :ok, _ } -> :ok
                 error ->
@@ -320,7 +319,7 @@ defmodule Resx.Producers.File do
 
     @doc false
     def call(node, module, fun, args, opts) do
-        case access?(opts) do
+        case access?(node, opts) do
             :ok ->
                 case node() do
                     ^node -> apply(module, fun, args)
