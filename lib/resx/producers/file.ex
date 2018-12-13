@@ -209,29 +209,30 @@ defmodule Resx.Producers.File do
         end
     end
 
+    defp store_meta(data, { :meta, { _, path, resource } }) do
+        File.write!(path <> ".meta", :erlang.term_to_binary(resource.meta))
+        { [data], nil }
+    end
+    defp store_meta(data, _), do: { [data], nil }
+
+    defp store_content(repo = { node, path, _ }, content) do
+        %Content.Stream{
+            type: extensions(path),
+            data: %__MODULE__.Stream{
+                stream: Content.Stream.new(content) |> Stream.into(File.stream!(path)) |> Stream.transform({ :meta, repo }, &store_meta/2),
+                node: node,
+                path: path
+            }
+        }
+    end
+
     defp store({ node, path, reference = %Reference{} }) do
         case Resource.stream(reference) do
             { :ok, resource } -> store({ node, path, resource })
             error -> error
         end
     end
-    defp store(repo = { node, path, resource }) do
-        content = %Content.Stream{
-            type: extensions(path),
-            data: %__MODULE__.Stream{
-                stream: Content.Stream.new(resource.content) |> Stream.into(File.stream!(path)) |> Stream.transform({ :meta, repo }, fn
-                    data, { :meta, { _, path, resource } } ->
-                        File.write!(path <> ".meta", :erlang.term_to_binary(resource.meta))
-                        { [data], nil }
-                    data, _ -> { [data], nil }
-                end),
-                node: node,
-                path: path
-            }
-        }
-
-        { :ok, { node, path, %{ resource | content: content } } }
-    end
+    defp store(repo = { node, path, resource }), do: { :ok, { node, path, %{ resource | content: store_content(repo, resource.content) } } }
 
     defp check_access(node, path, { :ok, source }) do
         case Resource.stream(source) do
@@ -516,7 +517,23 @@ defmodule Resx.Producers.File do
     end
 
     @doc false
-    def file_store(), do: :ok
+    def file_store({ node, path, resource }, opts) do
+        stream = Stream.resource(fn ->
+            if File.exists?(path) do
+                File.stream!(path, opts[:modes] || [], opts[:bytes] || :line)
+            else
+                case store({ node, path, resource }) do
+                    { :ok, { _, _, resource } } -> Content.Stream.new(resource.content)
+                    error -> throw error
+                end
+            end
+        end, fn
+            nil -> { :halt, nil }
+            stream -> { stream, nil }
+        end, &(&1))
+
+        { :ok, stream }
+    end
 
     @impl Resx.Producer
     def open(reference, _ \\ []) do
@@ -597,24 +614,12 @@ defmodule Resx.Producers.File do
                 path = Path.expand(path)
                 case to_path(%URI{ scheme: "file", host: host, path: path, userinfo: user }) do
                     { :ok, { node, path, _ } } ->
-                        case module_call(node, :file_store, [], path: path, checked: true) do
-                            :ok ->
+                        case module_call(node, :file_store, [{ node, path, resource }, options], path: path, checked: true) do
+                            { :ok, stream } ->
                                 content = %Content.Stream{
                                     type: extensions(path),
                                     data: %__MODULE__.Stream{
-                                        stream: Stream.resource(fn ->
-                                            if File.exists?(path) do
-                                                File.stream!(path, options[:modes] || [], options[:bytes] || :line)
-                                            else
-                                                case store({ node, path, resource }) do
-                                                    { :ok, { _, _, resource } } -> Content.Stream.new(resource.content)
-                                                    error -> throw error
-                                                end
-                                            end
-                                        end, fn
-                                            nil -> { :halt, nil }
-                                            stream -> { stream, nil }
-                                        end, &(&1)),
+                                        stream: stream,
                                         node: node,
                                         path: path
                                     }
