@@ -170,6 +170,42 @@ defmodule Resx.Producers.File do
       the identity of this resource will not be accurate. The timestamp will be the
       file timestamp at the time of first creating the resource, not necessarily the
       file timestamp at the time of operating on the content stream.
+
+      ### Sources
+
+      File sources are file references with a backup data source, so if the file no
+      longer exists it will revert back to getting the data from the source and
+      creating the file again. The data source is any compatible URI.
+
+        Resx.Producers.File.open("file:///hi.txt?source=ZGF0YTp0ZXh0L3BsYWluO2NoYXJzZXQ9VVMtQVNDSUk7YmFzZTY0LGFHaz0=")
+
+      If the source cannot be accessed anymore but the file exists, it will access
+      the file. If both cannot be accessed then the request will fail.
+
+      #### Caching
+
+      File sources can act a form of cache, a couple of scenarios you might want to
+      cache could be:
+
+      * Storing a copy of a file locally that originates from another node in the
+      network. So for as long as the file remains on the local node, any future
+      requests won't need to be sent across the network.
+      * Storing a file that is created from a chain of operations on a resource. So
+      future requests won't need to reprocess the original pipeline but can simply
+      access the file directly.
+
+      However there are some downsides to relying on it as a proper cache (or at least
+      require additional work):
+
+      * As the file reference will not be recreated unless it no longer exists, this
+      can mean that the data source is does not represent the current state of the
+      file. In order to invalidate the file it will need to be deleted.
+      * Recreating a file from a data source is __not atomic__, this can mean that
+      if there are multiple processes trying to operate on the file, some or all of
+      them may go through the process of creating the file from the data source. If
+      the data source contains a side-effect, or simply the referenced data changes,
+      the new file could be different from what some of the other processes will
+      receive.
     """
     use Resx.Producer
     use Resx.Storer
