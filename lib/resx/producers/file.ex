@@ -245,17 +245,17 @@ defmodule Resx.Producers.File do
         end
     end
 
-    defp store_meta(data, { :meta, { _, path, resource } }) do
-        File.write!(path <> ".meta", :erlang.term_to_binary(resource.meta))
+    defp store_meta(data, { :meta, path, meta }) do
+        File.write!(path <> ".meta", :erlang.term_to_binary(meta))
         { [data], nil }
     end
     defp store_meta(data, _), do: { [data], nil }
 
-    defp store_content(repo = { node, path, _ }, content) do
+    defp store_content(node, path, content, meta) do
         %Content.Stream{
             type: extensions(path),
             data: %__MODULE__.Stream{
-                stream: Content.Stream.new(content) |> Stream.into(File.stream!(path)) |> Stream.transform({ :meta, repo }, &store_meta/2),
+                stream: Content.Stream.new(content) |> Stream.into(File.stream!(path)) |> Stream.transform({ :meta, path, meta }, &store_meta/2),
                 node: node,
                 path: path
             }
@@ -268,7 +268,7 @@ defmodule Resx.Producers.File do
             error -> error
         end
     end
-    defp store(repo = { node, path, resource }), do: { :ok, { node, path, %{ resource | content: store_content(repo, resource.content) } } }
+    defp store(repo = { node, path, resource }), do: { :ok, { node, path, %{ resource | content: store_content(node, path, resource.content, resource.meta) } } }
 
     defp check_access(node, path, { :ok, source }) do
         case Resource.stream(source) do
@@ -553,15 +553,12 @@ defmodule Resx.Producers.File do
     end
 
     @doc false
-    def file_store({ node, path, resource }, opts) do
+    def file_store(node, path, content, meta, opts) do
         stream = Stream.resource(fn ->
             if File.exists?(path) do
                 File.stream!(path, opts[:modes] || [], opts[:bytes] || :line)
             else
-                case store({ node, path, resource }) do
-                    { :ok, { _, _, resource } } -> Content.Stream.new(resource.content)
-                    error -> throw error
-                end
+                store_content(node, path, content, meta)
             end
         end, fn
             nil -> { :halt, nil }
@@ -650,7 +647,7 @@ defmodule Resx.Producers.File do
                 path = Path.expand(path)
                 case to_path(%URI{ scheme: "file", host: host, path: path, userinfo: user }) do
                     { :ok, { node, path, _ } } ->
-                        case module_call(node, :file_store, [{ node, path, resource }, options], path: path, checked: true) do
+                        case module_call(node, :file_store, [node, path, resource.content, resource.meta, options], path: path, checked: true) do
                             { :ok, stream } ->
                                 content = %Content.Stream{
                                     type: extensions(path),
