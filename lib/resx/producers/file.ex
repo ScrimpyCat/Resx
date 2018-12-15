@@ -635,6 +635,28 @@ defmodule Resx.Producers.File do
         end
     end
 
+    @doc """
+      Store a resource as a file.
+
+      File stores are deferred, this means the returned resource will contain a content
+      stream. When the content stream is processed the store operation will be performed.
+
+      It should also be noted that like file sources, file stores a non-atomic.
+
+      The required options are:
+
+      * `:path` - expects a string denoting the path the file will be stored at. If
+      it is not an absolute path, the path will be expanded by the calling node (this
+      may result in the wrong path if it's storing on an external node).
+
+      The following options are all optional:
+
+      * `:node` - expects a node name for where the resource should be stored.
+      * `:modes` - expects a value of type `File.stream_mode`. If no modes are provided
+      it defaults to the default modes `File.stream!/3` opens with.
+      * `:bytes` - expects a positive integer for the number bytes to read per request.
+      If it is not provided, it defaults to reading line by line.
+    """
     @impl Resx.Storer
     def store(resource, options) do
         case Keyword.fetch(options, :path) do
