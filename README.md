@@ -19,9 +19,10 @@ Todo
 - [ ] Resource comparison
 - [ ] MIME processing pipelines
 - [X] Resource stores
-- [ ] File store
+- [X] File store
 - [ ] Memory store?
 - [ ] DateTime timestamp?
 - [X] File sources
 - [ ] Store hash in file sources
 - [ ] Optionally load a file's meta/hash information
+- [ ] Reduce amount of data sent with distributed file requests
