@@ -8,7 +8,7 @@ __Note:__ This library is still in development, there's no guarantee of backward
 
 ```elixir
 def deps do
-    [{ :resx, "== 0.0.0" }]
+    [{ :resx, "== 0.0.1" }]
 end
 ```
 
