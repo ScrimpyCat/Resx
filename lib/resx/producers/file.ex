@@ -641,7 +641,7 @@ defmodule Resx.Producers.File do
       File stores are deferred, this means the returned resource will contain a content
       stream. When the content stream is processed the store operation will be performed.
 
-      It should also be noted that like file sources, file stores a non-atomic.
+      It should also be noted that like file sources, file stores are non-atomic.
 
       The required options are:
 
