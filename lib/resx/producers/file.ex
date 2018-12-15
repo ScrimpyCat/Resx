@@ -268,7 +268,7 @@ defmodule Resx.Producers.File do
             error -> error
         end
     end
-    defp store(repo = { node, path, resource }), do: { :ok, { node, path, %{ resource | content: store_content(node, path, resource.content, resource.meta) } } }
+    defp store({ node, path, resource }), do: { :ok, { node, path, %{ resource | content: store_content(node, path, resource.content, resource.meta) } } }
 
     defp check_access(node, path, { :ok, source }) do
         case Resource.stream(source) do
