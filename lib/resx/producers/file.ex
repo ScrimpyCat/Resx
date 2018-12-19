@@ -253,7 +253,7 @@ defmodule Resx.Producers.File do
 
     defp store_content(node, path, content, meta) do
         %Content.Stream{
-            type: extensions(path),
+            type: mime(path),
             data: %__MODULE__.Stream{
                 stream: Content.Stream.new(content) |> Stream.into(File.stream!(path)) |> Stream.transform({ :meta, path, meta }, &store_meta/2),
                 node: node,
@@ -294,7 +294,32 @@ defmodule Resx.Producers.File do
         end
     end
 
-    defp extensions(path) do
+    @doc """
+      Get the MIME type list for the filename.
+
+        iex> Resx.Producers.File.mime("foo.txt")
+        ["text/plain"]
+
+        iex> Resx.Producers.File.mime("foo.txt.png.jpg")
+        ["image/jpeg", "image/png", "text/plain"]
+
+        iex> Resx.Producers.File.mime("foo")
+        ["application/octet-stream"]
+
+        iex> Resx.Producers.File.mime("a/b/foo.txt")
+        ["text/plain"]
+
+        iex> Resx.Producers.File.mime("a.png/b.exe/foo.txt")
+        ["text/plain"]
+
+        iex> Resx.Producers.File.mime(".txt")
+        ["application/octet-stream"]
+
+        iex> Resx.Producers.File.mime(".txt.png")
+        ["image/png"]
+    """
+    @spec mime(String.t) :: Content.type
+    def mime(path) do
         Path.basename(path)
         |> String.split(".", trim: true)
         |> case do
@@ -381,7 +406,7 @@ defmodule Resx.Producers.File do
         with { :read, { :ok, data } } <- { :read, File.read(path) },
              { :stat, timestamp } when is_integer(timestamp) <- { :stat, timestamp(path) } do
                 content = %Content{
-                    type: extensions(path),
+                    type: mime(path),
                     data: data
                 }
                 resource = %Resource{
@@ -405,7 +430,7 @@ defmodule Resx.Producers.File do
              { :meta, { :ok, meta } } <- { :meta, meta_contents(path <> ".meta") },
              { :stat, timestamp } when is_integer(timestamp) <- { :stat, timestamp(path) } do
                 content = %Content{
-                    type: extensions(path),
+                    type: mime(path),
                     data: data
                 }
                 resource = %Resource{
@@ -455,7 +480,7 @@ defmodule Resx.Producers.File do
         case timestamp(path) do
             timestamp when is_integer(timestamp) ->
                 content = %Content.Stream{
-                    type: extensions(path),
+                    type: mime(path),
                     data: %__MODULE__.Stream{ stream: stream, node: node, path: path }
                 }
                 resource = %Resource{
@@ -475,7 +500,7 @@ defmodule Resx.Producers.File do
     end
     def file_stream(repo = { node, path, source }, opts) do
         content = %Content.Stream{
-            type: extensions(path),
+            type: mime(path),
             data: %__MODULE__.Stream{
                 stream: Stream.resource(fn ->
                     if File.exists?(path) do
@@ -672,7 +697,7 @@ defmodule Resx.Producers.File do
                         case module_call(node, :file_store, [node, path, resource.content, resource.meta, options], path: path, checked: true) do
                             { :ok, stream } ->
                                 content = %Content.Stream{
-                                    type: extensions(path),
+                                    type: mime(path),
                                     data: %__MODULE__.Stream{
                                         stream: stream,
                                         node: node,

@@ -1,5 +1,6 @@
 defmodule Resx.Producers.FileTest do
     use ExUnit.Case
+    doctest Resx.Producers.File
 
     alias Resx.Resource
     alias Resx.Resource.Content
