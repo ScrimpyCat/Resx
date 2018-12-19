@@ -5,7 +5,7 @@ defmodule Resx.MixProject do
         [
             app: :resx,
             description: "Resource management and processing",
-            version: "0.0.1",
+            version: "0.0.2",
             elixir: "~> 1.7",
             start_permanent: Mix.env() == :prod,
             deps: deps(),
