@@ -420,7 +420,7 @@ defmodule Resx.Producers.File do
                     content: content
                 }
 
-                { :ok,  resource }
+                { :ok, resource }
         else
             { _, error } -> format_posix_error(error, path)
         end
@@ -445,7 +445,7 @@ defmodule Resx.Producers.File do
                     meta: meta
                 }
 
-                { :ok,  resource }
+                { :ok, resource }
         else
             _ ->
                 case source do
@@ -494,7 +494,7 @@ defmodule Resx.Producers.File do
                     content: content
                 }
 
-                { :ok,  resource }
+                { :ok, resource }
             error -> format_posix_error(error, path)
         end
     end
@@ -538,7 +538,7 @@ defmodule Resx.Producers.File do
                     meta: meta
                 }
 
-                { :ok,  resource }
+                { :ok, resource }
         else
             _ ->
                 case source do
