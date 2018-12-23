@@ -12,6 +12,14 @@ defmodule Resx.Producer do
     alias Resx.Resource.Reference
 
     @doc """
+      Implement the behaviour for retrieving the URI schemes this pproducer can
+      handle.
+
+      Return a list of the scheme names.
+    """
+    @callback schemes() :: [String.t, ...]
+
+    @doc """
       Implement the behaviour for retrieving a resource.
 
       The reference to the resource can either be an existing `Resx.Resource.Reference`
