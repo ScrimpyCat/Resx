@@ -58,6 +58,9 @@ defmodule Resx.Producers.Transform do
     end
 
     @impl Resx.Producer
+    def schemes(), do: ["resx-transform"]
+
+    @impl Resx.Producer
     def open(reference, opts \\ []) do
         case to_ref(reference) do
             { :ok, %Reference{ repository: { transformer, options, reference } } } ->

@@ -594,6 +594,9 @@ defmodule Resx.Producers.File do
     end
 
     @impl Resx.Producer
+    def schemes(), do: ["file"]
+
+    @impl Resx.Producer
     def open(reference, _ \\ []) do
         case to_path(reference) do
             { :ok, repo = { node, path, _ } } -> module_call(node, :file_open, [repo], path: path, checked: true)
