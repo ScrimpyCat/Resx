@@ -39,11 +39,11 @@ defmodule Resx do
     @type uri :: String.t
     @type ref :: uri | Reference.t
 
-    @default_producers %{
-        "data" => Resx.Producers.Data,
-        "file" => Resx.Producers.File,
-        "resx-transform" => Resx.Producers.Transform
-    }
+    @default_producers Utility.map_schemes(%{}, [
+        Resx.Producers.Data,
+        Resx.Producers.File,
+        Resx.Producers.Transform
+    ])
 
     @doc """
       Get the producer module for the given URI scheme.
@@ -58,11 +58,11 @@ defmodule Resx do
       key.
 
         config :resx,
-            producers: %{
-                "data" => MyDataProducer, \# Overrides the default data scheme's producer
-                "file" => nil, \# Overrides the default file scheme to have no producer
-                "custom" => MyCustomProducer \# Add a producer for a new URI scheme
-            }
+            producers: [
+                MyDataProducer, \# Add any scheme configuration from MyDataProducer
+                { "file", nil }, \# Overrides the default file scheme to have no producer
+                { "custom", MyDataProducer } \# Map a new URI scheme to MyDataProducer
+            ]
     """
     @spec producer(ref | Resource.t) :: module | nil
     def producer(%Resource{ reference: reference }), do: producer(reference)
@@ -70,7 +70,7 @@ defmodule Resx do
     def producer(uri) do
         %{ scheme: scheme } = URI.parse(uri)
 
-        Map.merge(@default_producers, Application.get_env(:resx, :producers, %{}))
+        Utility.map_schemes(@default_producers, Application.get_env(:resx, :producers, []))
         |> case do
             %{ ^scheme => adapter } -> adapter
             _ -> nil
