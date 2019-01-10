@@ -15,7 +15,7 @@ defmodule Resx.Resource.Content do
     defstruct [:type, :data]
 
     @type acc :: any
-    @type reducer :: (acc, (binary, acc -> acc) -> acc)
+    @type reducer(type) :: (acc, (type, acc -> acc) -> acc)
     @type mime :: String.t
     @type type :: [mime, ...]
     @type t :: %Content{
@@ -37,25 +37,31 @@ defmodule Resx.Resource.Content do
     def new(content), do: %Content{ type: content.type, data: data(content) }
 
     @doc """
-      Get the binary reducer for this content.
+      Get the reducer for this content.
 
-      Returns a function that will reduce the content into its binary form.
+      Returns a function that will reduce the content into the type requested.
 
-      By default this returns a reducer that assumes content is already in its
-      binary form. But this can be overridden by setting the `:content_reducer`
-      to a function of type `(t | Content.Stream.t -> reducer)`. Valid function
+      The default reducers for the different types are:
+
+      * `:binary` - returns a reducer that assumes its content is already in binary
+      form.
+
+      Reducers can be overridden by setting the `:content_reducer` to a function
+      of type `(t | Content.Stream.t, :binary | atom -> reducer)`. Valid function
       formats are any callback variant, see `Callback` for more information.
 
         config :resx,
             content_reducer: fn
-                content = %{ type: ["x.native/erlang"|_] } -> &(&2.(:erlang.term_to_binary(Resx.Resource.Content.data(content)), &1))
-                content -> &Enum.reduce(Resx.Resource.Content.Stream.new(content), &1, &2)
+                content = %{ type: ["x.native/erlang"|_] }, :binary -> &(&2.(:erlang.term_to_binary(Resx.Resource.Content.data(content)), &1))
+                content, :binary -> &Enum.reduce(Resx.Resource.Content.Stream.new(content), &1, &2)
             end
     """
-    @spec reducer(t | Content.Stream.t) :: reducer
-    def reducer(content) do
-        Application.get_env(:resx, :content_reducer, fn content ->
-            &Enum.reduce(Content.Stream.new(content), &1, &2)
-        end).(content)
+    @spec reducer(t | Content.Stream.t, :binary) :: reducer(binary)
+    @spec reducer(t | Content.Stream.t, atom) :: reducer(term)
+    def reducer(content, type \\ :binary)
+    def reducer(content, type) do
+        Application.get_env(:resx, :content_reducer, fn
+            content, :binary -> &Enum.reduce(Content.Stream.new(content), &1, &2)
+        end).(content, type)
     end
 end
