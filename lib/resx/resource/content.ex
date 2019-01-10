@@ -62,6 +62,6 @@ defmodule Resx.Resource.Content do
     def reducer(content, type) do
         Application.get_env(:resx, :content_reducer, fn
             content, :binary -> &Enum.reduce(Content.Stream.new(content), &1, &2)
-        end).(content, type)
+        end) |> Callback.call([content, type])
     end
 end
