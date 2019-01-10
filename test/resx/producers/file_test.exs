@@ -188,7 +188,7 @@ defmodule Resx.Producers.FileTest do
         end
 
         test "distributed" do
-            { :ok, _ } = LocalCluster.start()
+            :ok = LocalCluster.start()
 
             [node_a, node_b] = LocalCluster.start_nodes("test", 2)
 
