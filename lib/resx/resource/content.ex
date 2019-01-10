@@ -27,7 +27,19 @@ defmodule Resx.Resource.Content do
       Retrieve the content data.
     """
     @spec data(t | Content.Stream.t) :: any
-    def data(%Content.Stream{ data: data }), do: Enum.join(data)
+    def data(content = %Content.Stream{}) do
+        Application.get_env(:resx, :content_combiner, fn
+            content ->
+                Enum.reduce(content.data, { [], true }, fn
+                    chunk, { list, true } when is_bitstring(chunk) -> { [chunk|list], true }
+                    chunk, { list, _ } -> { [chunk|list], false }
+                end)
+                |> case do
+                    { list, true } -> Enum.reverse(list) |> Enum.into(<<>>)
+                    { list, false } -> Enum.reverse(list)
+                end
+        end) |> Callback.call([content])
+    end
     def data(content), do: content.data
 
     @doc """
