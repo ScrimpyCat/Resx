@@ -91,6 +91,14 @@ defmodule Resx.Producers.Data do
     end
 
     @impl Resx.Producer
+    def source(reference) do
+        case to_data(reference) do
+            { :ok, _ } -> { :ok, nil }
+            error -> error
+        end
+    end
+
+    @impl Resx.Producer
     def resource_uri(reference) do
         case to_data(reference) do
             { :ok, { type, attributes, data } } ->

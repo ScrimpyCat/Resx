@@ -231,14 +231,14 @@ defmodule Resx.Producers.File do
 
     defp to_path(%Reference{ repository: { node, path, source } }), do: check_access(node, path, source)
     defp to_path(%URI{ scheme: "file", path: nil }), do: { :error, { :invalid_reference, "no file path was specified" } }
-    defp to_path(%URI{ scheme: "file", host: host, path: path, userinfo: nil, query: query }) when host in [nil, "localhost"], do: check_access(node(), path, source(query))
-    defp to_path(%URI{ scheme: "file", host: host, path: path, userinfo: user, query: query }) when not is_nil(user), do: check_access(String.to_atom(user <> "@" <> host), path, source(query))
+    defp to_path(%URI{ scheme: "file", host: host, path: path, userinfo: nil, query: query }) when host in [nil, "localhost"], do: check_access(node(), path, decode_source(query))
+    defp to_path(%URI{ scheme: "file", host: host, path: path, userinfo: user, query: query }) when not is_nil(user), do: check_access(String.to_atom(user <> "@" <> host), path, decode_source(query))
     defp to_path(%URI{ scheme: "file" }), do: { :error, { :invalid_reference, "only supports local or remote node file references" } }
     defp to_path(uri) when is_binary(uri), do: URI.decode(uri) |> URI.parse |> to_path
     defp to_path(_), do: { :error, { :invalid_reference, "not a file reference" } }
 
-    defp source(nil), do: nil
-    defp source(query) do
+    defp decode_source(nil), do: nil
+    defp decode_source(query) do
         case URI.decode_query(query) do
             %{ "source" => data } -> Base.decode64(data)
             _ -> nil
@@ -639,6 +639,14 @@ defmodule Resx.Producers.File do
                 true
         else
             _ -> false
+        end
+    end
+
+    @impl Resx.Producer
+    def source(reference) do
+        case to_path(reference) do
+            { :ok, { _, _, source } } -> { :ok, source }
+            error -> error
         end
     end
 

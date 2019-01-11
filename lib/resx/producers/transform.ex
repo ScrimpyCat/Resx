@@ -90,6 +90,14 @@ defmodule Resx.Producers.Transform do
         end
     end
 
+    @impl Resx.Producer
+    def source(reference) do
+        case to_ref(reference) do
+            { :ok, %Reference{ repository: { _, _, source } } } -> { :ok, source }
+            error -> error
+        end
+    end
+
     defp format_options([]), do: []
     defp format_options(options), do: [":", :erlang.term_to_binary(options) |> Base.encode64]
 
