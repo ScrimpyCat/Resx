@@ -73,6 +73,18 @@ defmodule Resx.Producer do
     @callback alike?(reference_a :: Resx.ref, reference_b :: Resx.ref) :: boolean
 
     @doc """
+      Implement the behaviour to retrieve source (if any).
+
+      The reference to the resource can either be an existing `Resx.Resource.Reference`
+      struct, or a URI.
+
+      If the source can be retrieved return `{ :ok, source }`, where `source` is
+      either the reference chain for the source or `nil` if there is none. Otherwise
+      return an appropriate error.
+    """
+    @callback source(reference :: Resx.ref) :: { :ok, source :: Resx.ref | nil } | Resx.error(Resx.resource_error | Resx.reference_error)
+
+    @doc """
       Implement the behaviour to retrieve the URI for a resource reference.
 
       The reference to the resource is an existing `Resx.Resource.Reference`
