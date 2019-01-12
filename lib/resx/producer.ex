@@ -82,7 +82,7 @@ defmodule Resx.Producer do
       either the reference chain for the source or `nil` if there is none. Otherwise
       return an appropriate error.
     """
-    @callback source(reference :: Resx.ref) :: { :ok, source :: Resx.ref | nil } | Resx.error(Resx.resource_error | Resx.reference_error)
+    @callback source(reference :: Resx.ref) :: { :ok, source :: Resx.ref | nil } | Resx.error(Resx.reference_error)
 
     @doc """
       Implement the behaviour to retrieve the URI for a resource reference.
