@@ -119,6 +119,14 @@ defmodule Resx.Resource do
     def alike?(resource_a, resource_b), do: adapter_call([resource_a, resource_b], :alike?)
 
     @doc """
+      Get the source of the current resource or resource reference.
+
+      It will return `{ :ok, nil }` if there is no source.
+    """
+    @spec source(t | Resx.ref) :: { :ok, Resx.ref | nil } | Resx.error(Resx.reference_error)
+    def source(resource), do: adapter_call([resource], :source)
+
+    @doc """
       Retrieve the URI for a resource or resource reference.
     """
     @spec uri(t | Reference.t) :: { :ok, Resx.uri } | Resx.error(Resx.resource_error | Resx.reference_error)
