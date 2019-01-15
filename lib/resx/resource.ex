@@ -215,6 +215,29 @@ defmodule Resx.Resource do
     def store!(reference, storer, opts), do: stream!(reference) |> Resx.Storer.save!(storer, opts)
 
     @doc """
+      Check what kind of reference this resource or resource reference is.
+
+      iex> Resx.Resource.open!("data:,foo") |> Resx.Resource.kind?(Resx.Producer)
+      true
+
+      iex> Resx.Resource.kind?("data:,foo", Resx.Producer)
+      true
+
+      iex> Resx.Resource.kind?("data:,foo", Resx.Storer)
+      false
+
+      iex> Resx.Resource.kind?("data:,foo", Resx.Transformer)
+      false
+    """
+    @spec kind?(t | Resx.ref, module) :: boolean
+    def kind?(resource, behaviour) do
+        case adapter(resource) do
+            { :ok, adapter } -> adapter.__info__(:attributes) |> Enum.any?(&(&1 == { :behaviour, [behaviour] }))
+            _ -> false
+        end
+    end
+
+    @doc """
       Compute a hash of the resource content using the default hashing function.
 
       The default hashing function can be configured by giving a `:hash` option in
