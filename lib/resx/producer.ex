@@ -12,7 +12,7 @@ defmodule Resx.Producer do
     alias Resx.Resource.Reference
 
     @doc """
-      Implement the behaviour for retrieving the URI schemes this pproducer can
+      Implement the behaviour for retrieving the URI schemes this producer can
       handle.
 
       Return a list of the scheme names.
