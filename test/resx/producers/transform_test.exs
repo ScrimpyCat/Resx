@@ -190,6 +190,18 @@ defmodule Resx.Producers.TransformTest do
         end
     end
 
+    test "source/1" do
+        { :ok, resource_a } = Resource.open("data:text/plain;foo=bar,test")
+        { :ok, resource_b } = Transformer.apply(resource_a, Prefixer)
+        { :ok, resource_c } = Transformer.apply(resource_b, Prefixer)
+        { :ok, resource_d } = Transformer.apply(resource_c, Suffixer)
+
+        assert { :ok, resource_c.reference } == Resource.source(resource_d)
+        assert { :ok, resource_b.reference } == Resource.source(resource_c)
+        assert { :ok, resource_a.reference } == Resource.source(resource_b)
+        assert { :ok, nil } == Resource.source(resource_a)
+    end
+
     describe "attributes" do
         test "raw" do
             { :ok, original } = Resource.open("data:text/plain;foo=bar,test")
