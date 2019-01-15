@@ -17,4 +17,8 @@ defmodule Resx.Producers.DataTest do
         assert false == Resource.alike?("data:,test", "data:text/plain;base64,dGVzdA==")
         assert false == Resource.alike?("data:,test", "data:base64,dGVzdA==")
     end
+
+    test "source/1" do
+        assert { :ok, nil } == Resource.source("data:,test")
+    end
 end
