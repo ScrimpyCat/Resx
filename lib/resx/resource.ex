@@ -248,6 +248,22 @@ defmodule Resx.Resource do
     end
 
     @doc """
+      Find the reference in a resource or resource reference that matches the
+      condition in `fun`.
+    """
+    @spec find(t | Resx.ref, (t | Resx.ref -> boolean)) :: t | Resx.ref | nil
+    def find(resource, fun) do
+        if fun.(resource) do
+            resource
+        else
+            case source(resource) do
+                { :ok, source } when not is_nil(source) -> find(source, fun)
+                _ -> nil
+            end
+        end
+    end
+
+    @doc """
       Compute a hash of the resource content using the default hashing function.
 
       The default hashing function can be configured by giving a `:hash` option in
