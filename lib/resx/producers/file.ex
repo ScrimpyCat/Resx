@@ -436,7 +436,7 @@ defmodule Resx.Producers.File do
                 resource = %Resource{
                     reference: %Reference{
                         adapter: __MODULE__,
-                        repository: { node, path, source.reference },
+                        repository: { node, path, Resx.ref(source) },
                         integrity: %Integrity{
                             timestamp: timestamp
                         }
@@ -529,7 +529,7 @@ defmodule Resx.Producers.File do
                 resource = %Resource{
                     reference: %Reference{
                         adapter: __MODULE__,
-                        repository: { node, path, source.reference },
+                        repository: { node, path, Resx.ref(source) },
                         integrity: %Integrity{
                             timestamp: timestamp
                         }
