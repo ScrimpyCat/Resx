@@ -223,6 +223,9 @@ defmodule Resx.Resource do
       iex> Resx.Resource.kind?("data:,foo", Resx.Producer)
       true
 
+      iex> Resx.Resource.kind?("data:,foo", Resx.Producers.Data)
+      true
+
       iex> Resx.Resource.kind?("data:,foo", Resx.Storer)
       false
 
@@ -230,8 +233,15 @@ defmodule Resx.Resource do
       false
     """
     @spec kind?(t | Resx.ref, module) :: boolean
+    def kind?(resource, Resx.Transformer) do
+        case adapter(resource) do
+            { :ok, Resx.Producers.Transform } -> true
+            _ -> false
+        end
+    end
     def kind?(resource, behaviour) do
         case adapter(resource) do
+            { :ok, ^behaviour } -> true
             { :ok, adapter } -> adapter.__info__(:attributes) |> Enum.any?(&(&1 == { :behaviour, [behaviour] }))
             _ -> false
         end
