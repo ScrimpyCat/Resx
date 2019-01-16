@@ -248,22 +248,6 @@ defmodule Resx.Resource do
     end
 
     @doc """
-      Find the reference in a resource or resource reference that matches the
-      condition in `fun`.
-    """
-    @spec find(t | Resx.ref, (t | Resx.ref -> boolean)) :: t | Resx.ref | nil
-    def find(resource, fun) do
-        if fun.(resource) do
-            resource
-        else
-            case source(resource) do
-                { :ok, source } when not is_nil(source) -> find(source, fun)
-                _ -> nil
-            end
-        end
-    end
-
-    @doc """
       Compute a hash of the resource content using the default hashing function.
 
       The default hashing function can be configured by giving a `:hash` option in
@@ -365,4 +349,22 @@ defmodule Resx.Resource do
 
     defp content_reducer(%Resource{ content: content }), do: content_reducer(content)
     defp content_reducer(content), do: Content.reducer(content)
+end
+
+defimpl Enumerable, for: [Resx.Resource, Resx.Resource.Reference] do
+    def reduce(_, { :halt, acc }, _), do: { :halted, acc }
+    def reduce(resource, { :suspend, acc }, reducer), do: { :suspended, acc, &reduce(resource, &1, reducer) }
+    def reduce(resource, { :cont, acc }, reducer) do
+        { tag, acc } = reducer.(resource, acc)
+        case Resx.Resource.source(resource) do
+            { :ok, source } when not is_nil(source) -> reduce(source, { tag, acc }, reducer)
+            _ -> { :done, acc }
+        end
+    end
+
+    def count(_), do: { :error, __MODULE__ }
+
+    def member?(_, _), do: { :error, __MODULE__ }
+
+    def slice(_), do: { :error, __MODULE__ }
 end
