@@ -217,20 +217,20 @@ defmodule Resx.Resource do
     @doc """
       Check what kind of reference this resource or resource reference is.
 
-      iex> Resx.Resource.open!("data:,foo") |> Resx.Resource.kind?(Resx.Producer)
-      true
+        iex> Resx.Resource.open!("data:,foo") |> Resx.Resource.kind?(Resx.Producer)
+        true
 
-      iex> Resx.Resource.kind?("data:,foo", Resx.Producer)
-      true
+        iex> Resx.Resource.kind?("data:,foo", Resx.Producer)
+        true
 
-      iex> Resx.Resource.kind?("data:,foo", Resx.Producers.Data)
-      true
+        iex> Resx.Resource.kind?("data:,foo", Resx.Producers.Data)
+        true
 
-      iex> Resx.Resource.kind?("data:,foo", Resx.Storer)
-      false
+        iex> Resx.Resource.kind?("data:,foo", Resx.Storer)
+        false
 
-      iex> Resx.Resource.kind?("data:,foo", Resx.Transformer)
-      false
+        iex> Resx.Resource.kind?("data:,foo", Resx.Transformer)
+        false
     """
     @spec kind?(t | Resx.ref, module) :: boolean
     def kind?(resource, Resx.Transformer) do
