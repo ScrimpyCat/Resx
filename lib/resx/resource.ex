@@ -44,9 +44,6 @@ defmodule Resx.Resource do
         def message(%{ type: :unknown_resource, reason: reason }), do: "unknown resource: #{inspect reason}"
     end
 
-    defp ref(%Resource{ reference: reference }), do: reference
-    defp ref(reference), do: reference
-
     defp adapter(reference) do
         case Resx.producer(reference) do
             nil -> { :error, { :invalid_reference, "no producer for URI (#{reference})" } }
@@ -55,7 +52,7 @@ defmodule Resx.Resource do
     end
 
     defp adapter_call(resources, op, arg \\ [])
-    defp adapter_call([input|inputs], op, args), do: adapter_call(inputs, op, [ref(input)|args])
+    defp adapter_call([input|inputs], op, args), do: adapter_call(inputs, op, [Resx.ref(input)|args])
     defp adapter_call([], op, args) do
         args = [reference|_] = Enum.reverse(args)
         case adapter(reference) do

@@ -76,4 +76,11 @@ defmodule Resx do
             _ -> nil
         end
     end
+
+    @doc """
+      Shorthand for obtaining the reference.
+    """
+    @spec ref(ref | Resource.t) :: ref
+    def ref(%Resource{ reference: reference }), do: reference
+    def ref(reference), do: reference
 end
