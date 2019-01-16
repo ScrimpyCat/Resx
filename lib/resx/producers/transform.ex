@@ -73,6 +73,18 @@ defmodule Resx.Producers.Transform do
     end
 
     @impl Resx.Producer
+    def stream(reference, opts \\ []) do
+        case to_ref(reference) do
+            { :ok, %Reference{ repository: { transformer, options, reference } } } ->
+                case Resource.stream(reference, opts) do
+                    { :ok, resource } -> Resx.Transformer.apply(resource, transformer, options)
+                    error -> error
+                end
+            error -> error
+        end
+    end
+
+    @impl Resx.Producer
     def exists?(reference) do
         case to_ref(reference) do
             { :ok, %Reference{ repository: { _, _, reference } } } -> Resource.exists?(reference)
