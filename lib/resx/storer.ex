@@ -37,7 +37,7 @@ defmodule Resx.Storer do
       If the resource was successfully discarded return `:ok`. Otherwise return an
       appropriate error.
     """
-    @callback discard(resource :: Resource.t, options :: keyword) :: :ok | Resx.error
+    @callback discard(resource :: Resource.t, options :: keyword) :: :ok | Resx.error(Resx.resource_error | Resx.reference_error)
 
     @doc false
     defmacro __using__(_opts) do
