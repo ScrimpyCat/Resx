@@ -26,10 +26,28 @@ defmodule Resx.Storer do
     """
     @callback store(resource :: Resource.t, options :: keyword) :: { :ok, resource :: Resource.t } | Resx.error
 
+    @doc """
+      Optionally implement the behaviour to discard a resource. This should be used to
+      reverse the effects of a store. The default implementation does nothing and just
+      returns `:ok`.
+
+      The `options` keyword allows for your implementation to expose some configurable
+      settings.
+
+      If the resource was successfully discarded return `:ok`. Otherwise return an
+      appropriate error.
+    """
+    @callback discard(resource :: Resource.t, options :: keyword) :: :ok | Resx.error
+
     @doc false
     defmacro __using__(_opts) do
         quote do
             @behaviour Resx.Storer
+
+            @impl Resx.Storer
+            def discard(resource, opts \\ []), do: :ok
+
+            defoverridable [discard: 1, discard: 2]
         end
     end
 
