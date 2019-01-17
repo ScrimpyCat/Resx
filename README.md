@@ -26,3 +26,4 @@ Todo
 - [ ] Store hash in file sources
 - [ ] Optionally load a file's meta/hash information
 - [ ] Reduce amount of data sent with distributed file requests
+- [ ] Mixer (multiple resource transformation)
