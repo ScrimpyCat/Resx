@@ -666,7 +666,15 @@ defmodule Resx.Producers.File do
     @impl Resx.Producer
     def resource_attributes(reference) do
         case to_path(reference) do
-            { :ok, { node, path, _ } } -> module_call(node, :file_attributes, [path], path: path, checked: true)
+            { :ok, { node, path, source } } ->
+                case module_call(node, :file_attributes, [path], path: path, checked: true) do
+                    error = { :error, { :unknown_resource, _ } } ->
+                        case source do
+                            nil -> error
+                            source -> Resource.attributes(source)
+                        end
+                    result -> result
+                end
             error -> error
         end
     end
