@@ -212,6 +212,15 @@ defmodule Resx.Resource do
     def store!(reference, storer, opts), do: stream!(reference) |> Resx.Storer.save!(storer, opts)
 
     @doc """
+      Discard the resource.
+
+      Only resources or resource references that implement the `Resx.Storer` behaviour
+      should be passed to this.
+    """
+    @spec discard(t | Resx.ref, keyword) :: :ok | Resx.error(Resx.resource_error | Resx.reference_error)
+    def discard(resource, opts \\ []), do: adapter_call([resource, opts], :discard)
+
+    @doc """
       Check what kind of reference this resource or resource reference is.
 
         iex> Resx.Resource.open!("data:,foo") |> Resx.Resource.kind?(Resx.Producer)
