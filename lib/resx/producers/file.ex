@@ -593,6 +593,16 @@ defmodule Resx.Producers.File do
         { :ok, stream }
     end
 
+    @doc false
+    def file_delete(path, meta, content) do
+        with { :delete, :ok, _ } <- { :delete, if(meta, do: File.rm(path <> ".meta"), else: :ok), path <> ".meta" },
+             { :delete, :ok, _ } <- { :delete, if(content, do: File.rm(path), else: :ok), path } do
+                :ok
+        else
+            { :delete, error, path } -> format_posix_error(error, path)
+        end
+    end
+
     @impl Resx.Producer
     def schemes(), do: ["file"]
 
@@ -736,6 +746,25 @@ defmodule Resx.Producers.File do
                     error -> error
                 end
             _ -> { :error, { :internal, "a store :path must be specified" } }
+        end
+    end
+
+    @doc """
+      Discard a file resource.
+
+      The following options are all optional:
+
+      * `:meta` - specify whether the meta file should also be deleted. By default
+      it is.
+      * `:content` - specify whether the content file should also be deleted. By
+      default it is.
+    """
+    @impl Resx.Storer
+    @spec discard(Resx.ref, [meta: boolean, content: boolean]) :: :ok | Resx.error(Resx.resource_error | Resx.reference_error)
+    def discard(reference, opts) do
+        case to_path(reference) do
+            { :ok, { node, path, _ } } -> module_call(node, :file_delete, [path, opts[:meta] != false, opts[:content] != false], path: path, checked: true)
+            error -> error
         end
     end
 end
