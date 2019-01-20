@@ -39,10 +39,40 @@ defmodule Resx.Storer do
     """
     @callback discard(reference :: Resx.ref, options :: keyword) :: :ok | Resx.error(Resx.resource_error | Resx.reference_error)
 
+    @doc """
+      Optionally implement this behaviour to indicate the source compatibility details
+      of your producer/store implementation.
+
+      Source compatibility is determined when storing a resource would result in
+      the exact same resource as opening the resource with the other resource as
+      its source. e.g. `store(a) == open(reference_with_source_a)`.
+
+      By default an implementation of this function is provided that will return
+      `:incompatible` if the implementation is not a producer, and `{ :compatible, :default }`
+      if the implementation is a producer.
+
+      The compatibility details that can be returned are:
+
+      * `:incompatible` - The implementation does not provide source compatibility.
+      * `{ :compatible, :default }` - The implementation does provide source
+      compatibility, and the logic for dealing with sources is deferred to the
+      standard `Resx.Resource` wrapper. In this situation your producer/store
+      functions should only deal with accessing its own resource.
+      * `{ :compatible, :internal }` - The implementation does provide source
+      compatibility, and the logic for dealing with sources is handled internally.
+      A reason you might want to handle it internally is if it can be done more
+      efficiently that way.
+
+      Return whether the implementation does provide a compatible source
+      implementation or not.
+    """
+    @callback source_compatibility() :: :incompatible | { :compatible, :default | :internal }
+
     @doc false
     defmacro __using__(_opts) do
         quote do
             @behaviour Resx.Storer
+            @before_compile Resx.Storer
 
             @impl Resx.Storer
             def discard(_, _ \\ []), do: :ok
@@ -64,6 +94,21 @@ defmodule Resx.Storer do
                 storer: storer,
                 options: options
             }
+        end
+    end
+
+    defmacro __before_compile__(env) do
+        if !Module.defines?(env.module, { :source_compatibility, 0 }, :def) do
+            compatibility = if Resx.Producer in Module.get_attribute(env.module, :behaviour) do
+                { :compatible, :default }
+            else
+                :incompatible
+            end
+
+            quote do
+                @impl Resx.Storer
+                def source_compatibility(), do: unquote(compatibility)
+            end
         end
     end
 
