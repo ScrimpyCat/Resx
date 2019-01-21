@@ -135,6 +135,7 @@ defmodule Resx.Producer do
     defmacro __using__(_opts) do
         quote do
             @behaviour Resx.Producer
+            @before_compile Resx.Producer
 
             @impl Resx.Producer
             def stream(reference, opts \\ []) do
@@ -166,6 +167,14 @@ defmodule Resx.Producer do
             end
 
             defoverridable [stream: 1, stream: 2, resource_attribute: 2, resource_attribute_keys: 1]
+        end
+    end
+
+    defmacro __before_compile__(env) do
+        if !Module.defines?(env.module, { :source_compatibility, 0 }, :def) and Resx.Storer not in Module.get_attribute(env.module, :behaviour) do
+            quote do
+                def source_compatibility(), do: :incompatible
+            end
         end
     end
 end
