@@ -692,6 +692,14 @@ defmodule Resx.Producers.File do
     @impl Resx.Storer
     def source_compatibility(_), do: { :compatible, :internal }
 
+    @impl Resx.Storer
+    def prepare_store(reference) do
+        case to_path(reference) do
+            { :ok, { node, path, _ } } -> [path: path, node: node]
+            _ -> []
+        end
+    end
+
     @doc """
       Store a resource as a file.
 
