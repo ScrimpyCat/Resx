@@ -690,7 +690,7 @@ defmodule Resx.Producers.File do
     end
 
     @impl Resx.Storer
-    def source_compatibility(), do: { :compatible, :internal }
+    def source_compatibility(_), do: { :compatible, :internal }
 
     @doc """
       Store a resource as a file.

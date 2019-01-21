@@ -41,7 +41,7 @@ defmodule Resx.Storer do
 
     @doc """
       Optionally implement this behaviour to indicate the source compatibility details
-      of your producer/store implementation.
+      of your producer/store implementation for the given resource.
 
       Source compatibility is determined when storing a resource would result in
       the exact same resource as opening the resource with the other resource as
@@ -66,7 +66,7 @@ defmodule Resx.Storer do
       Return whether the implementation does provide a compatible source
       implementation or not.
     """
-    @callback source_compatibility() :: :incompatible | { :compatible, :default | :internal }
+    @callback source_compatibility(reference :: Resx.ref) :: :incompatible | { :compatible, :default | :internal }
 
     @doc false
     defmacro __using__(_opts) do
@@ -98,7 +98,7 @@ defmodule Resx.Storer do
     end
 
     defmacro __before_compile__(env) do
-        if !Module.defines?(env.module, { :source_compatibility, 0 }, :def) do
+        if !Module.defines?(env.module, { :source_compatibility, 1 }, :def) do
             compatibility = if Resx.Producer in Module.get_attribute(env.module, :behaviour) do
                 { :compatible, :default }
             else
@@ -107,7 +107,7 @@ defmodule Resx.Storer do
 
             quote do
                 @impl Resx.Storer
-                def source_compatibility(), do: unquote(compatibility)
+                def source_compatibility(_), do: unquote(compatibility)
             end
         end
     end

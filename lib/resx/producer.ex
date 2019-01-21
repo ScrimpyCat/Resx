@@ -171,9 +171,9 @@ defmodule Resx.Producer do
     end
 
     defmacro __before_compile__(env) do
-        if !Module.defines?(env.module, { :source_compatibility, 0 }, :def) and Resx.Storer not in Module.get_attribute(env.module, :behaviour) do
+        if !Module.defines?(env.module, { :source_compatibility, 1 }, :def) and Resx.Storer not in Module.get_attribute(env.module, :behaviour) do
             quote do
-                def source_compatibility(), do: :incompatible
+                def source_compatibility(_), do: :incompatible
             end
         end
     end
