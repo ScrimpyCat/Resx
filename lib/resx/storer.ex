@@ -68,6 +68,16 @@ defmodule Resx.Storer do
     """
     @callback source_compatibility(reference :: Resx.ref) :: :incompatible | { :compatible, :default | :internal }
 
+    @doc """
+      Optionally implement this behaviour to prepare a store to the given resource.
+
+      Preparing a store should return the options needed to pass to a store operation
+      to overwrite the current resource.
+
+      Return the keyword of any store options.
+    """
+    @callback prepare_store(reference :: Resx.ref) :: keyword
+
     @doc false
     defmacro __using__(_opts) do
         quote do
@@ -77,7 +87,10 @@ defmodule Resx.Storer do
             @impl Resx.Storer
             def discard(_, _ \\ []), do: :ok
 
-            defoverridable [discard: 1, discard: 2]
+            @impl Resx.Storer
+            def prepare_store(_), do: []
+
+            defoverridable [discard: 1, discard: 2, prepare_store: 1]
         end
     end
 
