@@ -723,6 +723,7 @@ defmodule Resx.Producers.File do
       If it is not provided, it defaults to reading line by line.
     """
     @impl Resx.Storer
+    @spec store(Resource.t, [path: String.t, node: node, modes: File.stream_mode, bytes: pos_integer]) :: { :ok, resource :: Resource.t(Content.Stream.t) } | Resx.error
     def store(resource, options) do
         case Keyword.fetch(options, :path) do
             { :ok, path } ->
