@@ -65,7 +65,23 @@ defmodule Resx.Resource do
       Open a resource from a pre-existing resource or a resource reference.
     """
     @spec open(t | Resx.ref, keyword) :: { :ok, Resource.t(Content.t) } | Resx.error(Resx.resource_error | Resx.reference_error)
-    def open(resource, opts \\ []), do: adapter_call([resource, opts], :open)
+    def open(resource, opts \\ []) do
+        with { :open, error = { :error, { :unknown_resource, _ } } } <- { :open, adapter_call([resource, opts], :open) },
+             { :source_compatibility, { :compatible, :default }, _ } <- { :source_compatibility, adapter_call([resource], :source_compatibility), error },
+             { :source, { :ok, source }, error } when not is_nil(source) <- { :source, source(resource), error },
+             { :open, { :ok, source } } <- { :open, open(source) },
+             { :adapter, { :ok, adapter } } <- { :adapter, adapter(resource) },
+             { :store, { :ok, resource } } <- { :store, store(source, adapter, adapter.prepare_store(resource)) } do
+                { :ok, %{ resource | content: Content.new(resource.content) } }
+        else
+            { :open, result } -> result
+            { :source_compatibility, _, error } -> error
+            { :source, nil, error } -> error
+            { :source, error, _ } -> error
+            { :adapter, error } -> error
+            { :store, error } -> error
+        end
+    end
 
     @doc """
       Open a resource from a pre-existing resource or a resource reference.
@@ -86,7 +102,23 @@ defmodule Resx.Resource do
       Stream a resource from a pre-existing resource or a resource reference.
     """
     @spec stream(t | Resx.ref, keyword) :: { :ok, Resource.t(Content.Stream.t) } | Resx.error(Resx.resource_error | Resx.reference_error)
-    def stream(resource, opts \\ []), do: adapter_call([resource, opts], :stream)
+    def stream(resource, opts \\ []) do
+        with { :stream, error = { :error, { :unknown_resource, _ } } } <- { :stream, adapter_call([resource, opts], :stream) },
+             { :source_compatibility, { :compatible, :default }, _ } <- { :source_compatibility, adapter_call([resource], :source_compatibility), error },
+             { :source, { :ok, source }, error } when not is_nil(source) <- { :source, source(resource), error },
+             { :stream, { :ok, source } } <- { :stream, stream(source) },
+             { :adapter, { :ok, adapter } } <- { :adapter, adapter(resource) },
+             { :store, { :ok, resource } } <- { :store, store(source, adapter, adapter.prepare_store(resource)) } do
+                { :ok, %{ resource | content: Content.Stream.new(resource.content) } }
+        else
+            { :stream, result } -> result
+            { :source_compatibility, _, error } -> error
+            { :source, nil, error } -> error
+            { :source, error, _ } -> error
+            { :adapter, error } -> error
+            { :store, error } -> error
+        end
+    end
 
     @doc """
       Stream a resource from a pre-existing resource or a resource reference.
