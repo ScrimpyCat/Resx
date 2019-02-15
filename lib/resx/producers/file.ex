@@ -110,7 +110,7 @@ defmodule Resx.Producers.File do
       #### Glob Pattern
 
       Glob pattern rules follow the syntax of `Path.wildcard/2`, with the addition
-      of an negative character match `[!char1,char2,...]`. e.g. `[!abc]` or `[!a-c]`
+      of a negative character match `[!char1,char2,...]`. e.g. `[!abc]` or `[!a-c]`
       (match any character other than `a`, `b`, or `c`).
 
       #### Distribution
