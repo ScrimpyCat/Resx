@@ -358,7 +358,7 @@ defmodule Resx.Producers.FileTest do
             assert { :ok, _ } = Resource.open("file://" <> Path.expand(path))
 
             Application.put_env(:resx, Resx.Producers.File, access: [])
-            assert { :error, { :invalid_reference, _ } } = Resource.open!("data:,hello") |> Resource.store(Resx.Producers.File, path: "resx_example_file_test.txt")
+            assert { :error, { :invalid_reference, _ } } = Resource.open!("data:,hello") |> Resource.store(Resx.Producers.File, path: path)
         end
 
         @tag temp_file: "resx_example_file_test.txt"
