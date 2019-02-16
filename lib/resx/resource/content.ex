@@ -33,6 +33,12 @@ defmodule Resx.Resource.Content do
       to a function of type `(Content.Stream.t -> any)`. Valid function formats
       are any callback variant, see `Callback` for more information.
 
+        config :resx,
+            content_combiner: fn
+                %{ type: ["application/x.erlang.etf"|_], data: [data] } -> data
+                content -> Content.Stream.combine(content, <<>>)
+            end
+
       To still use the default combiner in your custom combiner, you can pass the
       content to `Resx.Resource.Content.Stream.combine(content, <<>>)`.
 
