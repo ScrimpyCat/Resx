@@ -255,7 +255,7 @@ defmodule Resx.Producers.File do
         %Content.Stream{
             type: mime(path),
             data: %__MODULE__.Stream{
-                stream: Content.Stream.new(content) |> Stream.into(File.stream!(path)) |> Stream.transform({ :meta, path, meta }, &store_meta/2),
+                stream: Content.Stream.new(content) |> Content.reducer |> Stream.into(File.stream!(path)) |> Stream.transform({ :meta, path, meta }, &store_meta/2),
                 node: node,
                 path: path
             }
