@@ -14,8 +14,9 @@ defmodule Resx.Resource.Content do
 
     defstruct [:type, :data]
 
-    @type acc :: any
-    @type reducer(type) :: (acc, (type, acc -> acc) -> acc)
+    @type acc :: Enumerable.acc
+    @type result :: Enumerable.result
+    @type reducer(element) :: (acc, (element, acc -> acc) -> result)
     @type mime :: String.t
     @type type :: [mime, ...]
     @type t :: %Content{
@@ -60,7 +61,8 @@ defmodule Resx.Resource.Content do
     @doc """
       Get the reducer for this content.
 
-      Returns a function that will reduce the content into the type requested.
+      Returns an enumerable function that will reduce the content into the type
+      requested.
 
       The default reducers for the different types are:
 
@@ -73,8 +75,8 @@ defmodule Resx.Resource.Content do
 
         config :resx,
             content_reducer: fn
-                content = %{ type: ["x.native/erlang"|_] }, :binary -> &(&2.(:erlang.term_to_binary(Resx.Resource.Content.data(content)), &1))
-                content, :binary -> &Enum.reduce(Resx.Resource.Content.Stream.new(content), &1, &2)
+                content = %{ type: ["application/x.erlang.etf"|_] }, :binary -> &Enumerable.reduce([:erlang.term_to_binary(Resx.Resource.Content.data(content))], &1, &2)
+                content, :binary -> &Enumerable.reduce(Resx.Resource.Content.Stream.new(content), &1, &2)
             end
     """
     @spec reducer(t | Content.Stream.t, :binary) :: reducer(binary)
@@ -82,7 +84,7 @@ defmodule Resx.Resource.Content do
     def reducer(content, type \\ :binary)
     def reducer(content, type) do
         Application.get_env(:resx, :content_reducer, fn
-            content, :binary -> &Enum.reduce(Content.Stream.new(content), &1, &2)
+            content, :binary -> &Enumerable.reduce(Content.Stream.new(content), &1, &2)
         end) |> Callback.call([content, type])
     end
 end

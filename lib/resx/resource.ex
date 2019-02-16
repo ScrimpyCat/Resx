@@ -341,15 +341,15 @@ defmodule Resx.Resource do
     def hash(%Resource{ reference: %{ integrity: %{ checksum: checksum = { algo, _ } } } }, { algo, _ }), do: checksum
     def hash(%Resource{ reference: %{ integrity: %{ checksum: checksum = { algo, _ } } } }, algo), do: checksum
     def hash(resource, { algo, initialiser, updater, finaliser }) do
-        hash = Callback.call(finaliser, [content_reducer(resource) |> Callback.call([Callback.call(initialiser, [algo], :optional), &Callback.call(updater, [&2, &1])])])
+        hash = Callback.call(finaliser, [content_reducer(resource) |> Callback.call([{ :cont, Callback.call(initialiser, [algo], :optional) }, &({ :cont, Callback.call(updater, [&2, &1]) })]) |> elem(1)])
         { algo, hash }
     end
     def hash(resource, { algo, fun }) do
-        data = content_reducer(resource) |> Callback.call([<<>>, &(&2 <> &1)])
+        data = content_reducer(resource) |> Callback.call([{ :cont, <<>> }, &({ :cont, &2 <> &1 })]) |> elem(1)
         { algo, Callback.call(fun, [data]) }
     end
     def hash(resource, algo) do
-        hash = content_reducer(resource) |> Callback.call([:crypto.hash_init(algo), &:crypto.hash_update(&2, &1)]) |> :crypto.hash_final
+        hash = content_reducer(resource) |> Callback.call([{ :cont, :crypto.hash_init(algo) }, &({ :cont, :crypto.hash_update(&2, &1) })]) |> elem(1) |> :crypto.hash_final
         { algo, hash }
     end
 
