@@ -5,6 +5,23 @@ defmodule Resx.Producers.FileTest do
     alias Resx.Resource
     alias Resx.Resource.Content
 
+    setup context do
+        if file = context[:temp_file] do
+            on_exit fn ->
+                if File.exists?(file) do
+                    File.rm(file)
+                end
+
+                file = file <> ".meta"
+                if File.exists?(file) do
+                    File.rm(file)
+                end
+            end
+        end
+
+        { :ok, context }
+    end
+
     describe "open/1" do
         test "no access" do
             Application.put_env(:resx, Resx.Producers.File, access: [])
@@ -311,6 +328,51 @@ defmodule Resx.Producers.FileTest do
 
             Application.put_env(:resx, Resx.Producers.File, access: [])
             assert { :error, { :invalid_reference, _ } } = Resource.attribute(resource, :name)
+        end
+    end
+
+    describe "stores" do
+        @tag temp_file: "resx_example_file_test.txt"
+        test "saving a file", %{ temp_file: path } do
+            Application.put_env(:resx, Resx.Producers.File, access: ["**"])
+            assert { :ok, resource } = Resource.open!("data:,hello") |> Resource.store(Resx.Producers.File, path: path)
+
+            refute File.exists?(path)
+            assert "hello" == Content.data(resource.content)
+            assert File.exists?(path)
+            assert :ok == Resource.discard(resource)
+            refute File.exists?(path)
+
+            Application.put_env(:resx, Resx.Producers.File, access: [])
+            assert { :error, { :invalid_reference, _ } } = Resource.open!("data:,hello") |> Resource.store(Resx.Producers.File, path: "resx_example_file_test.txt")
+        end
+
+        @tag temp_file: "resx_example_file_test.txt"
+        test "saving non-binary contents", %{ temp_file: path } do
+            Application.put_env(:resx, Resx.Producers.File, access: ["**"])
+            resource = Resource.open!("data:,hello")
+            resource = %{ resource | content: %Content{ type: ["application/x.erlang.etf"], data: :foo } }
+            assert { :ok, resource } = resource |> Resource.store(Resx.Producers.File, path: path)
+
+            refute File.exists?(path)
+            assert catch_error(Content.data(resource.content))
+            assert :ok == Resource.discard(resource, meta: false)
+
+            Application.put_env(:resx, :content_reducer, fn
+                content = %{ type: ["application/x.erlang.etf"|_] }, :binary -> &Enumerable.reduce([:erlang.term_to_binary(Resx.Resource.Content.data(content))], &1, &2)
+                content, :binary -> &Enumerable.reduce(Resx.Resource.Content.Stream.new(content), &1, &2)
+            end)
+            Application.put_env(:resx, :content_combiner, fn
+                %{ type: ["application/x.erlang.etf"|_], data: [data] } -> data
+                content -> Content.Stream.combine(content, <<>>)
+            end)
+
+            assert :erlang.term_to_binary(:foo) == Content.data(resource.content)
+            assert :erlang.term_to_binary(:foo) == Resource.open!("file://" <> Path.expand(path)).content |> Content.data
+            assert :ok == Resource.discard(resource)
+
+            Application.delete_env(:resx, :content_reducer)
+            Application.delete_env(:resx, :content_combiner)
         end
     end
 end
