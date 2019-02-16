@@ -84,6 +84,20 @@ defmodule Resx.Resource.Content do
                 content = %{ type: ["application/x.erlang.etf"|_] }, :binary -> &Enumerable.reduce([:erlang.term_to_binary(Resx.Resource.Content.data(content))], &1, &2)
                 content, :binary -> &Enumerable.reduce(Resx.Resource.Content.Stream.new(content), &1, &2)
             end
+
+      The reducer should be able to be passed into an Enum or Stream function.
+
+        iex> reduce = Resx.Resource.Content.reducer(%Resx.Resource.Content.Stream{ type: [], data: ["1", "2", "3"] })
+        ...> reduce.({ :cont, "" }, &({ :cont, &2 <> &1 }))
+        { :done, "123" }
+
+        iex> reduce = Resx.Resource.Content.reducer(%Resx.Resource.Content.Stream{ type: [], data: ["1", "2", "3"] })
+        ...> Enum.into(reduce, "")
+        "123"
+
+        iex> reduce = Resx.Resource.Content.reducer(%Resx.Resource.Content.Stream{ type: [], data: ["1", "2", "3"] })
+        ...> Stream.take(reduce, 2) |> Enum.into("")
+        "12"
     """
     @spec reducer(t | Content.Stream.t, :binary) :: reducer(binary)
     @spec reducer(t | Content.Stream.t, atom) :: reducer(term)
