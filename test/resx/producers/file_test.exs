@@ -340,8 +340,15 @@ defmodule Resx.Producers.FileTest do
             refute File.exists?(path)
             assert "hello" == Content.data(resource.content)
             assert File.exists?(path)
+            assert "hello" == Resource.open!("file://" <> Path.expand(path)).content |> Content.data
             assert :ok == Resource.discard(resource)
             refute File.exists?(path)
+
+            assert { :error, { :unknown_resource, _ } } = Resource.open("file://" <> Path.expand(path))
+            refute File.exists?(path)
+            assert { :ok, _ } = Resource.open(resource)
+            assert File.exists?(path)
+            assert { :ok, _ } = Resource.open("file://" <> Path.expand(path))
 
             Application.put_env(:resx, Resx.Producers.File, access: [])
             assert { :error, { :invalid_reference, _ } } = Resource.open!("data:,hello") |> Resource.store(Resx.Producers.File, path: "resx_example_file_test.txt")
@@ -368,9 +375,18 @@ defmodule Resx.Producers.FileTest do
             end)
 
             assert :erlang.term_to_binary(:foo) == Content.data(resource.content)
+            assert File.exists?(path)
             assert :erlang.term_to_binary(:foo) == Resource.open!("file://" <> Path.expand(path)).content |> Content.data
             assert :ok == Resource.discard(resource)
+            refute File.exists?(path)
 
+            assert { :error, { :unknown_resource, _ } } = Resource.open("file://" <> Path.expand(path))
+            refute File.exists?(path)
+            assert { :ok, _ } = Resource.open(resource)
+            assert File.exists?(path)
+            assert { :ok, _ } = Resource.open("file://" <> Path.expand(path))
+
+            Application.put_env(:resx, Resx.Producers.File, access: [])
             Application.delete_env(:resx, :content_reducer)
             Application.delete_env(:resx, :content_combiner)
         end
