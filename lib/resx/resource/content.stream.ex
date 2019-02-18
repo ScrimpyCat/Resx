@@ -20,13 +20,28 @@ defmodule Resx.Resource.Content.Stream do
     }
 
     defimpl Enumerable do
-        def count(%{ data: data }), do: Enumerable.count(data)
+        def count(%{ data: data }) do
+            case Enumerable.count(data) do
+                { :error, _ } -> { :error, __MODULE__ }
+                result -> result
+            end
+        end
 
-        def member?(%{ data: data }, element), do: Enumerable.member?(data, element)
+        def member?(%{ data: data }, element) do
+            case Enumerable.member?(data, element) do
+                { :error, _ } -> { :error, __MODULE__ }
+                result -> result
+            end
+        end
 
         def reduce(%{ data: data }, acc, reducer), do: Enumerable.reduce(data, acc, reducer)
 
-        def slice(%{ data: data }), do: Enumerable.slice(data)
+        def slice(%{ data: data }) do
+            case Enumerable.slice(data) do
+                { :error, _ } -> { :error, __MODULE__ }
+                result -> result
+            end
+        end
     end
 
     @doc """
