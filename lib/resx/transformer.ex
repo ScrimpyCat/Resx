@@ -56,7 +56,7 @@ defmodule Resx.Transformer do
     def apply(resource, transformer, opts \\ []) do
         case transformer.transform(resource, opts) do
             { :ok, resource = %{ reference: reference } } ->
-                { :ok, %{ resource | reference: %Reference{ adapter: Resx.Producers.Transform, repository: { transformer, opts, reference }, integrity: %Integrity{ timestamp: DateTime.to_unix(DateTime.utc_now) } } } }
+                { :ok, %{ resource | reference: %Reference{ adapter: Resx.Producers.Transform, repository: { transformer, opts, reference }, integrity: %Integrity{ timestamp: DateTime.utc_now } } } }
             { :error, error } -> { :error, error }
         end
     end

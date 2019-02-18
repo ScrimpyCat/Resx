@@ -330,8 +330,10 @@ defmodule Resx.Producers.File do
     end
 
     defp timestamp(path) do
-        case File.stat(path, time: :posix) do
-            { :ok, %File.Stat{ mtime: timestamp } } -> timestamp
+        with { :ok, %File.Stat{ mtime: timestamp } } <- File.stat(path, time: :posix),
+             { :ok, timestamp } <- DateTime.from_unix(timestamp) do
+                timestamp
+        else
             error -> error
         end
     end
@@ -404,7 +406,7 @@ defmodule Resx.Producers.File do
     @doc false
     def file_open(repo = { _, path, nil }) do
         with { :read, { :ok, data } } <- { :read, File.read(path) },
-             { :stat, timestamp } when is_integer(timestamp) <- { :stat, timestamp(path) } do
+             { :stat, timestamp = %DateTime{} } <- { :stat, timestamp(path) } do
                 content = %Content{
                     type: mime(path),
                     data: data
@@ -428,7 +430,7 @@ defmodule Resx.Producers.File do
     def file_open(repo = { node, path, source }) do
         with { :read, { :ok, data } } <- { :read, File.read(path) },
              { :meta, { :ok, meta } } <- { :meta, meta_contents(path <> ".meta") },
-             { :stat, timestamp } when is_integer(timestamp) <- { :stat, timestamp(path) } do
+             { :stat, timestamp = %DateTime{} } <- { :stat, timestamp(path) } do
                 content = %Content{
                     type: mime(path),
                     data: data
@@ -460,14 +462,18 @@ defmodule Resx.Producers.File do
                             e -> { :error, { :internal, e } }
                         else
                             content ->
-                                reference = %Reference{
-                                    adapter: __MODULE__,
-                                    repository: { node, path, resource.reference },
-                                    integrity: %Integrity{
-                                        timestamp: timestamp(path)
-                                    }
-                                }
-                                { :ok, %{ resource | reference: reference, content: content } }
+                                case timestamp(path) do
+                                    timestamp = %DateTime{} ->
+                                        reference = %Reference{
+                                            adapter: __MODULE__,
+                                            repository: { node, path, resource.reference },
+                                            integrity: %Integrity{
+                                                timestamp: timestamp
+                                            }
+                                        }
+                                        { :ok, %{ resource | reference: reference, content: content } }
+                                    error -> format_posix_error(error, path)
+                                end
                         end
                     error -> error
                 end
@@ -478,7 +484,7 @@ defmodule Resx.Producers.File do
     def file_stream(repo = { node, path, nil }, opts) do
         stream = File.stream!(path, opts[:modes] || [], opts[:bytes] || :line)
         case timestamp(path) do
-            timestamp when is_integer(timestamp) ->
+            timestamp = %DateTime{} ->
                 content = %Content.Stream{
                     type: mime(path),
                     data: %__MODULE__.Stream{ stream: stream, node: node, path: path }
@@ -525,7 +531,7 @@ defmodule Resx.Producers.File do
         }
 
         with { :meta, { :ok, meta } } <- { :meta, meta_contents(path <> ".meta") },
-             { :stat, timestamp } when is_integer(timestamp) <- { :stat, timestamp(path) } do
+             { :stat, timestamp = %DateTime{} } <- { :stat, timestamp(path) } do
                 resource = %Resource{
                     reference: %Reference{
                         adapter: __MODULE__,
@@ -551,7 +557,7 @@ defmodule Resx.Producers.File do
                             adapter: __MODULE__,
                             repository: { node, path, resource.reference },
                             integrity: %Integrity{
-                                timestamp: DateTime.to_unix(DateTime.utc_now)
+                                timestamp: DateTime.utc_now
                             }
                         }
                         { :ok, %{ resource | reference: reference, content: content } }
@@ -738,7 +744,7 @@ defmodule Resx.Producers.File do
                                     adapter: __MODULE__,
                                     repository: { node, path, resource.reference },
                                     integrity: %Integrity{
-                                        timestamp: DateTime.to_unix(DateTime.utc_now)
+                                        timestamp: DateTime.utc_now
                                     }
                                 }
                                 { :ok, %{ resource | reference: reference, content: content } }

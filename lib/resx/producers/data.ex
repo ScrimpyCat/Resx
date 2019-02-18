@@ -181,7 +181,7 @@ defmodule Resx.Producers.Data do
                 adapter: __MODULE__,
                 repository: { type, attributes, data },
                 integrity: %Integrity{
-                    timestamp: DateTime.to_unix(DateTime.utc_now)
+                    timestamp: DateTime.utc_now
                 }
             },
             content: content

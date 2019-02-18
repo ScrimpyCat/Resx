@@ -4,7 +4,7 @@ defmodule Resx.Resource.Reference.Integrity do
 
         %Resx.Resource.Reference.Integrity{
             checksum: { :crc32, 3829359344 },
-            timestamp: 1536855009
+            timestamp: DateTime.utc_now
         }
     """
 
@@ -18,6 +18,6 @@ defmodule Resx.Resource.Reference.Integrity do
     @type checksum :: { algo, any }
     @type t :: %Integrity{
         checksum: nil | checksum,
-        timestamp: integer
+        timestamp: DateTime.t
     }
 end
