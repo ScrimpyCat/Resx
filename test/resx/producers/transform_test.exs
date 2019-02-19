@@ -51,7 +51,9 @@ defmodule Resx.Producers.TransformTest do
             { :ok, res } = Resource.open(uri)
             assert res.content == resource.content
 
-            assert { :ok, ^resource } = Resource.open(resource) # TODO: equal? function
+            assert { :ok, resource_b } = Resource.open(resource)
+            assert :lt == Resource.compare(resource, resource_b)
+            assert resource.content == resource_b.content
             assert res.content == resource.content
 
             { :ok, resource } = Transformer.apply(resource, Replacer, pattern: "foo", replacement: "abc")
@@ -74,7 +76,10 @@ defmodule Resx.Producers.TransformTest do
             { :ok, res } = Resource.open(uri)
             assert res.content == Content.new(resource.content)
 
-            assert { :ok, %{ resource | content: Content.new(resource.content) } } == Resource.open(resource) # TODO: equal? function
+            assert { :ok, resource_b } = Resource.open(resource)
+            assert :lt == Resource.compare(Resource.finalise!(resource), resource_b)
+            assert resource.content != resource_b.content
+            assert Content.new(resource.content) == resource_b.content
             assert res.content == Content.new(resource.content)
 
             { :ok, resource } = Transformer.apply(resource, Replacer, pattern: "foo", replacement: "abc")
