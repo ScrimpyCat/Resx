@@ -13,6 +13,9 @@ defmodule Resx.Resource do
     @type hash_state :: any
     @type streamable_hasher :: { Integrity.algo, initializer :: Callback.callback(Integrity.algo, hash_state), updater :: Callback.callback(hash_state, binary, hash_state), finaliser :: Callback.callback(hash_state, any) }
     @type hasher :: { Integrity.algo, Callback.callback(binary, any) }
+    @type compare_order :: :first | :last
+    @type compare_result :: nil | :ne | :lt | :eq | :gt | :na
+    @type compare_options :: [order: compare_order, unsure: compare_result, content: boolean]
 
     @enforce_keys [:reference, :content]
 
@@ -166,7 +169,7 @@ defmodule Resx.Resource do
       * `:content` - Expects a boolean indicating whether the content data should be
       compared as well or not. By default this is set to `false`.
     """
-    @spec compare(t, t, [order: :first | :last, unsure: nil | :ne | :lt | :eq | :gt | :na, content: boolean]) :: nil | :ne | :lt | :eq | :gt | :na
+    @spec compare(t, t, compare_options) :: compare_result
     def compare(resource_a, resource_b, opts \\ []) do
         if alike?(resource_a, resource_b) do
             comparisons = comparisons(resource_a.reference, resource_b.reference)
@@ -191,6 +194,40 @@ defmodule Resx.Resource do
             end
         else
             nil
+        end
+    end
+
+    @doc """
+      Retrieve the newest of the two alike resources.
+
+      If this cannot be determined, it will return the value in the `:default` option.
+
+      Comparison options can be passed to control how the two resources are compared
+      with each other. For more details on this behaviour see `Resx.Resource.compare/3`.
+    """
+    @spec newest(t, t, [default: term|compare_options]) :: t | term
+    def newest(resource_a, resource_b, opts \\ []) do
+        case compare(resource_a, resource_b, opts) do
+            :lt -> resource_b
+            :gt -> resource_a
+            _ -> opts[:default]
+        end
+    end
+
+    @doc """
+      Retrieve the oldest of the two alike resources.
+
+      If this cannot be determined, it will return the value in the `:default` option.
+
+      Comparison options can be passed to control how the two resources are compared
+      with each other. For more details on this behaviour see `Resx.Resource.compare/3`.
+    """
+    @spec oldest(t, t, [default: term|compare_options]) :: t | term
+    def oldest(resource_a, resource_b, opts \\ []) do
+        case compare(resource_a, resource_b, opts) do
+            :lt -> resource_a
+            :gt -> resource_b
+            _ -> opts[:default]
         end
     end
 
