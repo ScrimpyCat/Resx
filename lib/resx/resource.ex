@@ -115,6 +115,48 @@ defmodule Resx.Resource do
     @spec alike?(t | Resx.ref, t | Resx.ref) :: boolean
     def alike?(resource_a, resource_b), do: adapter_call([resource_a, resource_b], :alike?)
 
+    defp comparisons(ref_a, ref_b, results \\ [])
+    defp comparisons({ :ok, nil }, { :ok, nil }, results), do: results
+    defp comparisons({ :ok, ref_a }, { :ok, ref_b }, results), do: comparisons(ref_a, ref_b, results)
+    defp comparisons(ref_a, ref_b, results) do
+        comparisons(source(ref_a), source(ref_b), [Integrity.compare(ref_a.integrity, ref_b.integrity)|results])
+    end
+
+    defp check_comparisons({ true, :eq }, _), do: { :cont, :eq }
+    defp check_comparisons({ true, diff }, _), do: { :halt, diff }
+    defp check_comparisons({ false, :eq }, _), do: { :cont, :ne }
+    defp check_comparisons({ false, diff }, _), do: { :halt, diff }
+    defp check_comparisons({ nil, :eq }, _), do: { :cont, :na }
+    defp check_comparisons({ nil, diff }, _), do: {:halt, diff }
+
+    @spec compare(t, t, [order: :first | :last, unsure: term, content: boolean]) :: nil | :ne | :lt | :eq | :gt
+    def compare(resource_a, resource_b, opts \\ []) do
+        if alike?(resource_a, resource_b) do
+            comparisons = comparisons(resource_a.reference, resource_b.reference)
+            case opts[:order] || :first do
+                :first -> comparisons |> Enum.reduce_while(nil, &check_comparisons/2)
+                :last -> comparisons |> Enum.reverse |> Enum.reduce_while(nil, &check_comparisons/2)
+            end
+            |> case do
+                :eq ->
+                    if opts[:content] do
+                        if(Content.data(resource_a.content) == Content.data(resource_b.content), do: :eq, else: :ne)
+                    else
+                        :eq
+                    end
+                :na ->
+                    if opts[:content] do
+                        if(Content.data(resource_a.content) == Content.data(resource_b.content), do: :eq, else: :ne)
+                    else
+                        opts[:unsure] || :na
+                    end
+                result -> result
+            end
+        else
+            nil
+        end
+    end
+
     @doc """
       Get the source of the current resource or resource reference.
 
