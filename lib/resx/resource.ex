@@ -204,6 +204,21 @@ defmodule Resx.Resource do
 
       Comparison options can be passed to control how the two resources are compared
       with each other. For more details on this behaviour see `Resx.Resource.compare/3`.
+
+        iex> old = Resx.Resource.open!("data:,hello")
+        ...> new = Resx.Resource.open!(old)
+        ...> new == Resx.Resource.newest(old, new)
+        true
+
+        iex> old = Resx.Resource.open!("data:,hello")
+        ...> new = Resx.Resource.open!(old)
+        ...> new == Resx.Resource.newest(new, old)
+        true
+
+        iex> old = Resx.Resource.open!("data:,foo")
+        ...> new = Resx.Resource.open!("data:,bar")
+        ...> Resx.Resource.newest(new, old)
+        nil
     """
     @spec newest(t, t, [default: term|compare_options]) :: t | term
     def newest(resource_a, resource_b, opts \\ []) do
@@ -221,6 +236,21 @@ defmodule Resx.Resource do
 
       Comparison options can be passed to control how the two resources are compared
       with each other. For more details on this behaviour see `Resx.Resource.compare/3`.
+
+        iex> old = Resx.Resource.open!("data:,hello")
+        ...> new = Resx.Resource.open!(old)
+        ...> old == Resx.Resource.oldest(old, new)
+        true
+
+        iex> old = Resx.Resource.open!("data:,hello")
+        ...> new = Resx.Resource.open!(old)
+        ...> old == Resx.Resource.oldest(new, old)
+        true
+
+        iex> old = Resx.Resource.open!("data:,foo")
+        ...> new = Resx.Resource.open!("data:,bar")
+        ...> Resx.Resource.oldest(new, old)
+        nil
     """
     @spec oldest(t, t, [default: term|compare_options]) :: t | term
     def oldest(resource_a, resource_b, opts \\ []) do
