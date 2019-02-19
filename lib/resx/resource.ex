@@ -399,6 +399,52 @@ defmodule Resx.Resource do
         end
     end
 
+    defp process(resource, opts) do
+        resource = if(opts[:content] || true, do: %{ resource | content: Content.new(resource.content) }, else: resource)
+
+        case opts[:hash] do
+            true -> %{ resource | reference: %{ resource.reference | integrity: %{ resource.reference.integrity | checksum: hash(resource) } } }
+            false -> resource
+            nil -> %{ resource | reference: %{ resource.reference | integrity: %{ resource.reference.integrity | checksum: hash(resource) } } }
+            algo -> %{ resource | reference: %{ resource.reference | integrity: %{ resource.reference.integrity | checksum: hash(resource, algo) } } }
+        end
+    end
+
+    @doc """
+      Finalise all pending operations on the resource.
+
+      The result is a resource with the requested operations applied to it.
+
+      Set the `:content` option to indicate whether content should be included in
+      the final resource (e.g. if it is a stream, its result should be stored
+      instead). By default it is.
+
+      Set the `:hash` option to indicate whether the content hash should be included
+      in the final resource, and which hashing algorithm should be used. By default
+      it is included and is the same as calling `Resx.Resource.hash/1`.
+    """
+    @spec finalise(t | Resx.ref, [content: boolean, hash: boolean | Integrity.algo | hasher | streamable_hasher]) :: { :ok, t } | Resx.error(Resx.resource_error | Resx.reference_error)
+    def finalise(reference, opts \\ [])
+    def finalise(resource = %Resource{}, opts), do: { :ok, process(resource, opts) }
+    def finalise(reference, opts) do
+        case stream(reference) do
+            { :ok, resource } -> finalise(resource, opts)
+            error -> error
+        end
+    end
+
+    @doc """
+      Finalise all pending operations on the resource.
+
+      For more details see `Resx.Resource.finalise/2`.
+
+      Raises any error exceptions.
+    """
+    @spec finalise!(t | Resx.ref, [content: boolean, hash: boolean | Integrity.algo | hasher | streamable_hasher]) :: t | no_return
+    def finalise!(reference, opts \\ [])
+    def finalise!(resource = %Resource{}, opts), do: process(resource, opts)
+    def finalise!(reference, opts), do: stream!(reference) |> finalise!(opts)
+
     @doc """
       Compute a hash of the resource content using the default hashing function.
 
