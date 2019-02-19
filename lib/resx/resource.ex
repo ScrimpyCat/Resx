@@ -124,12 +124,49 @@ defmodule Resx.Resource do
 
     defp check_comparisons({ true, :eq }, _), do: { :cont, :eq }
     defp check_comparisons({ true, diff }, _), do: { :halt, diff }
-    defp check_comparisons({ false, :eq }, _), do: { :cont, :ne }
+    defp check_comparisons({ false, :eq }, _), do: { :halt, :ne }
     defp check_comparisons({ false, diff }, _), do: { :halt, diff }
     defp check_comparisons({ nil, :eq }, _), do: { :cont, :na }
     defp check_comparisons({ nil, diff }, _), do: {:halt, diff }
 
-    @spec compare(t, t, [order: :first | :last, unsure: term, content: boolean]) :: nil | :ne | :lt | :eq | :gt
+    @doc """
+      Compare two resources.
+
+      The result of the comparison will be one of the following:
+      * `nil` - The two resources are not alike. And therefore not equal.
+      * `:eq` - The two resources are equal. This will either be integrity equality
+      or if the `:content` option is set to `true` then the content's must also be
+      equal.
+      * `:lt` or `:gt` - The first resource is older or newer than the second. This
+      is based on the integrity timestamps in the order specified in the `:order`
+      option. A `:first` order will iterate through the sources from the original
+      to the current, while `:last` order will iterate from current to original.
+      The first one with a differing timestamp will be used. Note that this does
+      not tell you the equality of the two resources (to do that check
+      `Resx.Resource.Reference.Integrity.compare/2` or manually compare).
+      * `:ne` - The two resources are not equal. They have equal timestamps for all
+      sources, but one of the sources does not have an equal checksum or if the
+      `:content` option was set to `true`, then also if the content's are not equal.
+      * `:na` - The two resources cannot be determined. The timestamps are all equal
+      for all sources, but there were no checksums to compare against for the final
+      iteration (see `:order`). If the `:content` option is set to true, then the
+      final result will be determined by the content comparison, because of this
+      `:na` will no longer be a possible result (it will instead be either `:eq` or
+      `:ne`). The `:unsure` option can be to change the result term, e.g. if
+      uncertain comparisons should just be considered not equal, then `[unsure: :ne]`
+      could be passed as an option.
+
+      The following options may be passed to this function:
+      * `:order` - The source order in which the comparisons should occur. An order
+      of `:first` will iterate from the original source to the current, while `:last`
+      will iterate from the current source to the original. By default this is
+      `:first`.
+      * `:unsure` - Override the result returned when the comparison result is
+      ambiguous. By default this is set to `:na`.
+      * `:content` - Expects a boolean indicating whether the content data should be
+      compared as well or not. By default this is set to `false`.
+    """
+    @spec compare(t, t, [order: :first | :last, unsure: nil | :ne | :lt | :eq | :gt | :na, content: boolean]) :: nil | :ne | :lt | :eq | :gt | :na
     def compare(resource_a, resource_b, opts \\ []) do
         if alike?(resource_a, resource_b) do
             comparisons = comparisons(resource_a.reference, resource_b.reference)
