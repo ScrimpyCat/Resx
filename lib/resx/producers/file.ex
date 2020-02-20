@@ -231,7 +231,7 @@ defmodule Resx.Producers.File do
 
     defp to_path(%Reference{ repository: { node, path, source } }), do: check_access(node, path, source)
     defp to_path(%URI{ scheme: "file", path: nil }), do: { :error, { :invalid_reference, "no file path was specified" } }
-    defp to_path(%URI{ scheme: "file", host: host, path: path, userinfo: nil, query: query }) when host in [nil, "localhost"], do: check_access(node(), path, decode_source(query))
+    defp to_path(%URI{ scheme: "file", host: host, path: path, userinfo: nil, query: query }) when host in [nil, "", "localhost"], do: check_access(node(), path, decode_source(query))
     defp to_path(%URI{ scheme: "file", host: host, path: path, userinfo: user, query: query }) when not is_nil(user), do: check_access(String.to_atom(user <> "@" <> host), path, decode_source(query))
     defp to_path(%URI{ scheme: "file" }), do: { :error, { :invalid_reference, "only supports local or remote node file references" } }
     defp to_path(uri) when is_binary(uri), do: URI.decode(uri) |> URI.parse |> to_path
