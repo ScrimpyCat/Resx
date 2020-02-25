@@ -51,8 +51,10 @@ defmodule Resx.Producer do
 
     @doc """
       Optionally implement the behaviour for checking whether a resource exists for the
-      given reference. If an implementation is not provided it will determine whether
-      the resource exists by opening the resource.
+      given reference.
+
+      If an implementation is not provided it will determine whether the resource exists
+      by opening the resource.
 
       The reference to the resource can either be an existing `Resx.Resource.Reference`
       struct, or a URI.
