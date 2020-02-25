@@ -50,8 +50,9 @@ defmodule Resx.Producer do
     @callback stream(reference :: Resx.ref, options :: keyword) :: { :ok, resource :: Resource.t(Content.Stream.t) } | Resx.error(Resx.resource_error | Resx.reference_error)
 
     @doc """
-      Implement the behaviour for checking whether a resource exists for the given
-      reference.
+      Optionally implement the behaviour for checking whether a resource exists for the
+      given reference. If an implementation is not provided it will determine whether
+      the resource exists by opening the resource.
 
       The reference to the resource can either be an existing `Resx.Resource.Reference`
       struct, or a URI.
@@ -145,6 +146,14 @@ defmodule Resx.Producer do
             end
 
             @impl Resx.Producer
+            def exists?(reference) do
+                case __MODULE__.open(reference, []) do
+                    { :ok, _ } -> true
+                    error -> error
+                end
+            end
+
+            @impl Resx.Producer
             def resource_attribute(reference, field) do
                 case __MODULE__.resource_attributes(reference) do
                     { :ok, attributes } ->
@@ -165,7 +174,7 @@ defmodule Resx.Producer do
                 end
             end
 
-            defoverridable [stream: 1, stream: 2, resource_attribute: 2, resource_attribute_keys: 1]
+            defoverridable [stream: 1, stream: 2, exists?: 1, resource_attribute: 2, resource_attribute_keys: 1]
         end
     end
 end
