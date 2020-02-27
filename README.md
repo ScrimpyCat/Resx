@@ -6,7 +6,7 @@ Installation
 
 ```elixir
 def deps do
-    [{ :resx, "~> 0.1.2" }]
+    [{ :resx, "~> 0.1.3" }]
 end
 ```
 
