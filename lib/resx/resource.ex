@@ -400,7 +400,7 @@ defmodule Resx.Resource do
     end
 
     defp process(resource, opts) do
-        resource = if(opts[:content] || true, do: %{ resource | content: Content.new(resource.content) }, else: resource)
+        resource = if(Keyword.get(opts, :content, true), do: %{ resource | content: Content.new(resource.content) }, else: resource)
 
         case opts[:hash] do
             true -> %{ resource | reference: %{ resource.reference | integrity: %{ resource.reference.integrity | checksum: hash(resource) } } }
